@@ -46,6 +46,8 @@ The implementation surface is intentionally small while the conceptual contract 
 - [High-level architecture](docs/high_level_architecture.md)
 - [Threat model](docs/threat_model.md)
 - [Security invariants](docs/security_invariants.md)
+- [Technical debt ledger](docs/technical_debt.md)
+- [Five-phase audit policy](docs/audit_policy.md)
 - [Conceptual heritage](references/conceptual_heritage.md)
 - [Canonical flow](architecture/diagrams/canonical-flow.md)
 
