@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-015 - Phase 15 mandatory audit findings
+
+- **Phase:** 15
+- **Status:** Accepted for synthetic MVP; blocking before real integrations
+- **Severity:** Medium
+- **What changed:** Audited Phases 11-14, including hybrid assurance, Agent K traces, response fusion, and governed durable-audit integration.
+- **What broke or was discovered:** Found a High audit-ordering weakness in Phase 14: execution could precede the completion audit append. It was fixed before the audit by requiring `tool_authorized` preflight recording.
+- **Root cause:** Audit was initially post-execution observability, rather than a fail-closed authorization condition.
+- **Fix applied or proposed:** Keep the repaired preflight gate; add crash recovery, transactional adapters, execution receipts, and completion reconciliation before consequential tools.
+- **Why this fix:** An audit outage must reduce authority, not permit execution without an authorization record.
+- **Remaining risk:** A crash after execution can still omit the completion record; semantic evaluation, Agent K, identity, evidence, MCP, and audit storage remain synthetic or local-only.
+- **Refactor required:** Yes before real integrations; no before synthetic Phase 16.
+- **Related controls:** `docs/audits/phase-15-audit.md`, INV-AUD-001 through INV-AUD-004, INV-GOV-002 through INV-GOV-004, INV-MCP-001, STRIDE-AI tampering and repudiation.
+- **Tests added:** Mandatory audit probes plus durable audit preflight failure, Agent K trace, and hybrid response fusion suites.
+- **Tests still missing:** Transactional tool adapters, crash recovery, real MCP enforcement, live evaluator isolation, source verification, protected audit storage, memory, network enforcement, and concurrency.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 20 audit or before any real integration.
+
 ### TD-014 - Governed durable audit integration
 
 - **Phase:** 14
