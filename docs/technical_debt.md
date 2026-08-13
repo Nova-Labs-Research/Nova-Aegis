@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-016 - Phase 15 debt reconciliation
+
+- **Phase:** 16
+- **Status:** Mitigated
+- **Severity:** Low
+- **What changed:** Reconciled the active debt view after the Phase 15 audit. TD-014 is resolved for the synthetic flow; unresolved identity, gateway, evidence, audit-completion, semantic-evaluator, and Agent K scope items are consolidated in TD-015 and AUD15-002 through AUD15-006.
+- **What broke or was discovered:** Several older entries retained review dates already reached by the Phase 15 audit, and Phase 11-12 historical remaining-risk text no longer reflected the implemented Agent K and response-path integration.
+- **Root cause:** The ledger preserves phase history while implementation phases advanced faster than the original review-date wording.
+- **Fix applied or proposed:** Keep historical records, but use TD-015 as the current security disposition and update stale Phase 11-12 implementation references below. Reassess all unresolved items at Phase 20 or before any real integration.
+- **Why this fix:** A debt ledger must distinguish historical discovery context from active, actionable risk.
+- **Remaining risk:** Duplicate historical entries can still require human interpretation; a future ledger normalization should add explicit `superseded by` metadata if the record volume grows.
+- **Refactor required:** No before synthetic Phase 16 work; reassess at Phase 20 audit.
+- **Related controls:** Phase 15 audit, Debt Rules 4-7.
+- **Tests added:** Full 53-test regression suite remains passing.
+- **Tests still missing:** No code test required; future ledger consistency checks could validate overdue review dates and supersession links.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 20 audit.
+
 ### TD-015 - Phase 15 mandatory audit findings
 
 - **Phase:** 15
@@ -103,13 +121,13 @@ Each phase record must answer:
 - **Root cause:** The original Praetor response path performed deterministic evidence checks inline and returned a single untraceable decision.
 - **Fix applied or proposed:** Route response assurance through labeled evaluator contracts and `HybridAssurance`. Convert evaluator exception or mislabeled output to `REVIEW` before fusion.
 - **Why this fix:** A semantic evaluator must be independently observable and unable to convert uncertainty, failure, or injection into an approved response.
-- **Remaining risk:** The semantic evaluator is a synthetic default; Agent K is not separately implemented; no evaluator isolation, prompt construction, suppression layer, confidence calibration, or real model/provider lifecycle exists.
+- **Remaining risk:** The semantic evaluator is a synthetic default; Agent K is now separately implemented for evidence rules, but no evaluator isolation, prompt construction, suppression layer, confidence calibration, or real model/provider lifecycle exists.
 - **Refactor required:** Yes before live semantic evaluation or any claim of production hybrid assurance; no before continued synthetic governance work.
 - **Related controls:** High-level architecture Section 13, threat model Sections 19-21, INV-GOV-001 through INV-GOV-004, INV-AUD-001, INV-AUD-002.
 - **Tests added:** Response-path semantic concern, deterministic hard failure, semantic evaluator outage, evaluator-kind mismatch, and audit-verdict assertions.
-- **Tests still missing:** Live semantic evaluator isolation, evaluator prompt injection, repeated-run behavior, deterministic Agent K traces, evaluator model provenance, and tool-path hybrid fusion.
+- **Tests still missing:** Live semantic evaluator isolation, evaluator prompt injection, repeated-run behavior, evaluator model provenance, and tool-path hybrid fusion.
 - **Owner:** Nova Aegis
-- **Review date:** Phase 15 audit or before live semantic evaluator integration.
+- **Review date:** Phase 20 audit or before live semantic evaluator integration.
 
 ### TD-011 - Fixed hybrid assurance fusion contract
 
@@ -121,13 +139,13 @@ Each phase record must answer:
 - **Root cause:** The hybrid architecture was documented but no executable fusion contract existed.
 - **Fix applied or proposed:** Use evaluator-labeled immutable decisions and explicit fixed rules; reject mislabeled evaluator inputs. The local research PDF is hash-recorded as design input, not treated as authority.
 - **Why this fix:** It makes the Phase 10 hybrid-fusion requirement testable without connecting a live semantic model or weakening deterministic governance.
-- **Remaining risk:** No semantic evaluator, Agent K implementation, evaluator isolation, suppression layer, confidence calibration, or integrated Praetor response path exists. The report’s judge configuration metadata is incomplete and its findings are not independently reproduced here.
+- **Remaining risk:** No live semantic evaluator, evaluator isolation, suppression layer, confidence calibration, or production-integrated tool fusion exists. The report’s judge configuration metadata is incomplete and its findings are not independently reproduced here.
 - **Refactor required:** Yes before real semantic evaluation or production governance; no before further synthetic hybrid testing.
 - **Related controls:** High-level architecture Section 13, threat model Sections 19-21, INV-GOV-002, INV-GOV-003, INV-GOV-004, STRIDE-AI AI-specific manipulation.
 - **Tests added:** Dual-PASS, semantic misrepresentation, structural-tag omission, hard safety boundary, evaluator injection, semantic review, and evaluator-label mismatch.
-- **Tests still missing:** Live evaluator isolation, stochastic repeatability, semantic prompt injection, Agent K traces, integrated response/tool fusion, confidence thresholds, and human-review workflow.
+- **Tests still missing:** Live evaluator isolation, stochastic repeatability, semantic prompt injection, integrated response/tool fusion, confidence thresholds, and human-review workflow.
 - **Owner:** Nova Aegis
-- **Review date:** Phase 15 audit or before live semantic evaluator integration.
+- **Review date:** Phase 20 audit or before live semantic evaluator integration.
 
 ### TD-010 - Phase 10 mandatory audit findings
 
