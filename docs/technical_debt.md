@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-017 - Idempotent execution receipt and recovery boundary
+
+- **Phase:** 17
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added SQLite-backed idempotency-keyed execution receipts with `authorized` and `completed` states. Synthetic execution persists completion before reporting success, returns stored results without duplicate execution, and routes incomplete receipts to `REVIEW` with a recovery event.
+- **What broke or was discovered:** Phase 14 preflight prevented execution without authorization audit, but a crash or completion-persistence failure after the tool call could still leave the operation ambiguous.
+- **Root cause:** The audit event chain had no durable operation-level receipt tying authorization, execution identity, and completion result together.
+- **Fix applied or proposed:** Persist a receipt before execution; reject reuse for a different operation; complete the receipt before success; never automatically replay an `authorized` but incomplete receipt.
+- **Why this fix:** Ambiguous external state must reduce authority. Retrying blindly can duplicate a consequential action.
+- **Remaining risk:** The receipt records Nova Aegis state, not independent external-tool state. No real MCP execution receipt, transactional adapter, reconciliation workflow, operator resolution, concurrency control, or crash-injection harness exists.
+- **Refactor required:** Yes before real tools or consequential execution; no before synthetic Phase 18 work.
+- **Related controls:** High-level architecture Section 21, AUD15-002, INV-AUD-001 through INV-AUD-003, INV-FAIL-002, INV-HUMAN-001, STRIDE-AI repudiation.
+- **Tests added:** Duplicate completion returns stored result, pending receipt requires review, completion persistence failure, and idempotency-key operation mismatch.
+- **Tests still missing:** Real tool receipt validation, crash recovery across process restart, reconciliation authorization, concurrent key contention, transactional MCP adapter, and durable operator workflow.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 20 audit or before real tool integration.
+
 ### TD-016 - Phase 15 debt reconciliation
 
 - **Phase:** 16

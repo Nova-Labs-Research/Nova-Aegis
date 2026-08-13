@@ -122,6 +122,19 @@ class DeterministicTrace:
     rules: tuple[RuleEvaluation, ...]
 
 
+@dataclass(frozen=True)
+class ExecutionReceipt:
+    idempotency_key: str
+    request_id: str
+    tool: str
+    target: str
+    value: str
+    user_id: str
+    role: str
+    status: str
+    result: dict[str, str] | None
+
+
 class AgentK:
     """Deterministic evidence evaluator with inspectable ordered rule results."""
 
@@ -355,6 +368,7 @@ class AuditLog:
             "tool_authorized",
             "tool_blocked",
             "tool_executed",
+            "tool_recovery_required",
         }
     )
 
@@ -399,7 +413,120 @@ class SQLiteAuditLog:
             )
             """
         )
+        self._connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS execution_receipts (
+                idempotency_key TEXT PRIMARY KEY,
+                request_id TEXT NOT NULL,
+                tool TEXT NOT NULL,
+                target TEXT NOT NULL,
+                value TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                role TEXT NOT NULL,
+                status TEXT NOT NULL,
+                result_json TEXT,
+                created_at TEXT NOT NULL,
+                completed_at TEXT
+            )
+            """
+        )
         self._connection.commit()
+
+    def prepare_execution(
+        self,
+        *,
+        idempotency_key: str,
+        request_id: str,
+        tool: str,
+        target: str,
+        value: str,
+        user_id: str,
+        role: str,
+    ) -> tuple[ExecutionReceipt, bool]:
+        if not isinstance(idempotency_key, str) or not idempotency_key.strip():
+            raise ValueError("Execution idempotency key must be a non-empty string")
+        existing = self.get_execution_receipt(idempotency_key)
+        if existing is not None:
+            if (existing.tool, existing.target, existing.value, existing.user_id) != (
+                tool,
+                target,
+                value,
+                user_id,
+            ):
+                raise ValueError("Execution idempotency key was reused for a different operation")
+            return existing, False
+        self._connection.execute(
+            """
+            INSERT INTO execution_receipts
+                (idempotency_key, request_id, tool, target, value, user_id, role, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'authorized', ?)
+            """,
+            (
+                idempotency_key,
+                request_id,
+                tool,
+                target,
+                value,
+                user_id,
+                role,
+                datetime.now(timezone.utc).isoformat(),
+            ),
+        )
+        self._connection.commit()
+        receipt = self.get_execution_receipt(idempotency_key)
+        if receipt is None:
+            raise AuditIntegrityError("Execution receipt could not be persisted")
+        return receipt, True
+
+    def complete_execution(
+        self,
+        idempotency_key: str,
+        result: Mapping[str, str],
+    ) -> ExecutionReceipt:
+        receipt = self.get_execution_receipt(idempotency_key)
+        if receipt is None:
+            raise ValueError("Execution receipt does not exist")
+        if receipt.status == "completed":
+            return receipt
+        self._connection.execute(
+            """
+            UPDATE execution_receipts
+            SET status = 'completed', result_json = ?, completed_at = ?
+            WHERE idempotency_key = ? AND status = 'authorized'
+            """,
+            (
+                json.dumps(dict(result), sort_keys=True, separators=(",", ":")),
+                datetime.now(timezone.utc).isoformat(),
+                idempotency_key,
+            ),
+        )
+        self._connection.commit()
+        completed = self.get_execution_receipt(idempotency_key)
+        if completed is None or completed.status != "completed":
+            raise AuditIntegrityError("Execution receipt completion could not be persisted")
+        return completed
+
+    def get_execution_receipt(self, idempotency_key: str) -> ExecutionReceipt | None:
+        row = self._connection.execute(
+            """
+            SELECT idempotency_key, request_id, tool, target, value, user_id, role, status, result_json
+            FROM execution_receipts WHERE idempotency_key = ?
+            """,
+            (idempotency_key,),
+        ).fetchone()
+        if row is None:
+            return None
+        result_json = row[8]
+        return ExecutionReceipt(
+            *row[:8],
+            json.loads(result_json) if result_json else None,
+        )
+
+    def pending_execution_receipts(self) -> tuple[ExecutionReceipt, ...]:
+        rows = self._connection.execute(
+            "SELECT idempotency_key FROM execution_receipts WHERE status = 'authorized' ORDER BY created_at"
+        ).fetchall()
+        return tuple(self.get_execution_receipt(row[0]) for row in rows if row)
 
     def append(self, event_type: str, **details: Any) -> None:
         if event_type not in self.EVENT_TYPES:
@@ -777,6 +904,7 @@ class NovaAegisMVP:
         user_id: str = "anonymous",
         role: str = "default",
         credential: IdentityCredential | None = None,
+        idempotency_key: str | None = None,
     ) -> dict[str, Any]:
         request_id = str(uuid4())
         if not isinstance(target, str) or not target.strip():
@@ -843,6 +971,39 @@ class NovaAegisMVP:
                 "warning": decision.reason,
             }
 
+        receipt: ExecutionReceipt | None = None
+        if isinstance(self.audit_log, SQLiteAuditLog):
+            receipt_key = idempotency_key or request_id
+            receipt, created = self.audit_log.prepare_execution(
+                idempotency_key=receipt_key,
+                request_id=request_id,
+                tool=self.synthetic_tool.name,
+                target=target,
+                value=value,
+                user_id=context.user_id,
+                role=context.role,
+            )
+            if not created:
+                if receipt.status == "completed":
+                    return {
+                        "result": receipt.result,
+                        "assurance": AssuranceStatus.PASS.value,
+                        "warning": "Execution already completed for this idempotency key",
+                    }
+                self.audit_log.append(
+                    "tool_recovery_required",
+                    request_id=receipt.request_id,
+                    tool=receipt.tool,
+                    target=receipt.target,
+                    idempotency_key=receipt.idempotency_key,
+                    reason="Execution receipt is authorized but has no completion record",
+                )
+                return {
+                    "result": None,
+                    "assurance": AssuranceStatus.REVIEW.value,
+                    "warning": "Execution recovery is required before retrying this operation",
+                }
+
         try:
             self.audit_log.append(
                 "tool_authorized",
@@ -852,6 +1013,7 @@ class NovaAegisMVP:
                 user_id=context.user_id,
                 role=context.role,
                 assurance=decision.status.value,
+                idempotency_key=receipt.idempotency_key if receipt else None,
             )
         except Exception as error:
             return {
@@ -861,15 +1023,36 @@ class NovaAegisMVP:
             }
 
         result = self.synthetic_tool.execute(target, value)
-        self.audit_log.append(
-            "tool_executed",
-            request_id=request_id,
-            tool=self.synthetic_tool.name,
-            target=target,
-            user_id=context.user_id,
-            role=context.role,
-            assurance=decision.status.value,
-        )
+        try:
+            if receipt is not None:
+                receipt = self.audit_log.complete_execution(receipt.idempotency_key, result)
+            self.audit_log.append(
+                "tool_executed",
+                request_id=request_id,
+                tool=self.synthetic_tool.name,
+                target=target,
+                user_id=context.user_id,
+                role=context.role,
+                assurance=decision.status.value,
+                idempotency_key=receipt.idempotency_key if receipt else None,
+            )
+        except Exception as error:
+            try:
+                self.audit_log.append(
+                    "tool_recovery_required",
+                    request_id=request_id,
+                    tool=self.synthetic_tool.name,
+                    target=target,
+                    idempotency_key=receipt.idempotency_key if receipt else None,
+                    reason=f"Execution completed but durable completion handling failed: {error}",
+                )
+            except Exception:
+                pass
+            return {
+                "result": None,
+                "assurance": AssuranceStatus.REVIEW.value,
+                "warning": "Execution completed but recovery is required before reporting success",
+            }
         return {
             "result": result,
             "assurance": decision.status.value,

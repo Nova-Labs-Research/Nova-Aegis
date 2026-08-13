@@ -477,6 +477,8 @@ Important events should produce structured audit records. Each request should re
 
 For sensitive tool execution, audit recording is part of the authorization boundary. The current synthetic flow records a `tool_authorized` event before execution and refuses the action if that preflight record cannot be written. A later `tool_executed` event records the result. This ordering ensures an audit outage cannot make execution more permissive.
 
+SQLite-backed synthetic execution also persists an idempotency-keyed receipt before the tool is called and completes that receipt before reporting success. A completed receipt returns the stored result without replaying the tool. An authorized receipt without completion is an ambiguous recovery state: Nova Aegis returns `REVIEW`, records `tool_recovery_required`, and does not automatically retry the operation.
+
 Example fields include:
 
 ```text
