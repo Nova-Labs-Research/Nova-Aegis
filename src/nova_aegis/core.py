@@ -13,6 +13,8 @@ import hashlib
 import json
 import re
 import sqlite3
+import secrets
+import time
 from uuid import uuid4
 from typing import Any, Iterable, Mapping
 
@@ -29,6 +31,14 @@ class GovernanceUnavailable(RuntimeError):
 
 class AuditIntegrityError(RuntimeError):
     """Raised when a durable audit chain is missing or has been altered."""
+
+
+class IdentityError(RuntimeError):
+    """Raised when an identity credential is invalid or revoked."""
+
+
+class PolicyIntegrityError(RuntimeError):
+    """Raised when the loaded policy set no longer matches its fingerprint."""
 
 
 @dataclass(frozen=True)
@@ -94,6 +104,70 @@ class AuthorizationContext:
 
 
 @dataclass(frozen=True)
+class IdentityCredential:
+    token: str
+    user_id: str
+    role: str
+    issued_at: int
+    expires_at: int
+    signature: str
+
+
+class IdentityAuthority:
+    """Synthetic server-side issuer and validator for authorization context."""
+
+    def __init__(self, *, secret: bytes | None = None, lifetime_seconds: int = 300) -> None:
+        if lifetime_seconds < 1:
+            raise ValueError("Identity lifetime must be positive")
+        self._secret = secret or secrets.token_bytes(32)
+        self._lifetime_seconds = lifetime_seconds
+        self._issued_tokens: set[str] = set()
+        self._revoked_tokens: set[str] = set()
+
+    def issue(self, user_id: str, role: str) -> IdentityCredential:
+        if not isinstance(user_id, str) or not user_id.strip():
+            raise ValueError("Identity user ID must be a non-empty string")
+        if not isinstance(role, str) or not role.strip():
+            raise ValueError("Identity role must be a non-empty string")
+        issued_at = int(time.time())
+        expires_at = issued_at + self._lifetime_seconds
+        token = secrets.token_urlsafe(24)
+        signature = self._sign(token, user_id, role, issued_at, expires_at)
+        self._issued_tokens.add(token)
+        return IdentityCredential(token, user_id, role, issued_at, expires_at, signature)
+
+    def authenticate(self, credential: IdentityCredential) -> AuthorizationContext:
+        if not isinstance(credential, IdentityCredential):
+            raise IdentityError("Identity credential is invalid")
+        now = int(time.time())
+        if credential.token not in self._issued_tokens:
+            raise IdentityError("Identity credential was not issued by this authority")
+        if credential.token in self._revoked_tokens:
+            raise IdentityError("Identity credential is revoked")
+        if credential.expires_at <= now:
+            raise IdentityError("Identity credential is expired")
+        expected = self._sign(
+            credential.token,
+            credential.user_id,
+            credential.role,
+            credential.issued_at,
+            credential.expires_at,
+        )
+        if not secrets.compare_digest(credential.signature, expected):
+            raise IdentityError("Identity credential signature is invalid")
+        return AuthorizationContext(user_id=credential.user_id, role=credential.role)
+
+    def revoke(self, credential: IdentityCredential) -> None:
+        if credential.token not in self._issued_tokens:
+            raise IdentityError("Identity credential was not issued by this authority")
+        self._revoked_tokens.add(credential.token)
+
+    def _sign(self, token: str, user_id: str, role: str, issued_at: int, expires_at: int) -> str:
+        payload = f"{token}|{user_id}|{role}|{issued_at}|{expires_at}".encode("utf-8")
+        return hashlib.blake2b(payload, key=self._secret, digest_size=32).hexdigest()
+
+
+@dataclass(frozen=True)
 class ToolPolicy:
     tool_name: str
     allowed_roles: frozenset[str]
@@ -121,6 +195,21 @@ class ToolPolicy:
                 f"Operation value is not authorized: {parameters.get('value')}",
             )
         return Decision(AssuranceStatus.PASS, "Tool, role, target, and operation are authorized")
+
+
+def _policy_fingerprint(policies: Mapping[str, ToolPolicy]) -> str:
+    serialized = [
+        {
+            "tool_name": name,
+            "allowed_roles": sorted(policy.allowed_roles),
+            "allowed_targets": sorted(policy.allowed_targets),
+            "allowed_values": sorted(policy.allowed_values),
+        }
+        for name, policy in sorted(policies.items())
+    ]
+    return hashlib.sha256(
+        json.dumps(serialized, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 class AuditLog:
@@ -373,6 +462,7 @@ class Praetor:
                 )
             }
         )
+        self._policy_fingerprint = _policy_fingerprint(self.tool_policies)
 
     def evaluate_response(self, citations: tuple[Citation, ...]) -> Decision:
         self._require_available()
@@ -403,6 +493,7 @@ class Praetor:
         parameters: Mapping[str, str],
     ) -> Decision:
         self._require_available()
+        self.verify_policy_integrity()
         if tool_name not in authorized_tools:
             return Decision(
                 AssuranceStatus.FAIL,
@@ -412,6 +503,10 @@ class Praetor:
         if policy is None:
             return Decision(AssuranceStatus.FAIL, f"No policy is defined for tool: {tool_name}")
         return policy.evaluate(context, parameters)
+
+    def verify_policy_integrity(self) -> None:
+        if _policy_fingerprint(self.tool_policies) != self._policy_fingerprint:
+            raise PolicyIntegrityError("Loaded tool policy integrity verification failed")
 
     def _require_available(self) -> None:
         if not self.available:
@@ -440,11 +535,13 @@ class NovaAegisMVP:
         documents: Iterable[Evidence],
         *,
         praetor: Praetor | None = None,
+        identity_authority: IdentityAuthority | None = None,
         audit_log: AuditLog | None = None,
         synthetic_tool: SyntheticTool | None = None,
     ) -> None:
         self.retriever = LocalRetriever(documents)
         self.praetor = praetor or Praetor()
+        self.identity_authority = identity_authority or IdentityAuthority()
         self.audit_log = audit_log or AuditLog()
         self.synthetic_tool = synthetic_tool or SyntheticTool()
 
@@ -502,6 +599,7 @@ class NovaAegisMVP:
         authorized_tools: frozenset[str] = frozenset(),
         user_id: str = "anonymous",
         role: str = "default",
+        credential: IdentityCredential | None = None,
     ) -> dict[str, Any]:
         request_id = str(uuid4())
         if not isinstance(target, str) or not target.strip():
@@ -522,23 +620,18 @@ class NovaAegisMVP:
             )
             raise ValueError("Tool value must be a non-empty string")
         try:
+            context = (
+                self.identity_authority.authenticate(credential)
+                if credential is not None
+                else AuthorizationContext(user_id=user_id, role=role)
+            )
             decision = self.praetor.authorize_tool(
                 self.synthetic_tool.name,
                 authorized_tools,
-                context=AuthorizationContext(user_id=user_id, role=role),
+                context=context,
                 parameters={"target": target, "value": value},
             )
-        except GovernanceUnavailable as error:
-            self.audit_log.append(
-                "tool_blocked",
-                request_id=request_id,
-                tool=self.synthetic_tool.name,
-                target=target,
-                reason=str(error),
-            )
-            raise
-
-        if decision.status is not AssuranceStatus.PASS:
+        except (GovernanceUnavailable, IdentityError, PolicyIntegrityError) as error:
             self.audit_log.append(
                 "tool_blocked",
                 request_id=request_id,
@@ -546,6 +639,24 @@ class NovaAegisMVP:
                 target=target,
                 user_id=user_id,
                 role=role,
+                reason=str(error),
+            )
+            if isinstance(error, GovernanceUnavailable):
+                raise
+            return {
+                "result": None,
+                "assurance": AssuranceStatus.FAIL.value,
+                "warning": str(error),
+            }
+
+        if decision.status is not AssuranceStatus.PASS:
+            self.audit_log.append(
+                "tool_blocked",
+                request_id=request_id,
+                tool=self.synthetic_tool.name,
+                target=target,
+                user_id=context.user_id,
+                role=context.role,
                 assurance=decision.status.value,
                 reason=decision.reason,
             )
@@ -561,8 +672,8 @@ class NovaAegisMVP:
             request_id=request_id,
             tool=self.synthetic_tool.name,
             target=target,
-            user_id=user_id,
-            role=role,
+            user_id=context.user_id,
+            role=context.role,
             assurance=decision.status.value,
         )
         return {

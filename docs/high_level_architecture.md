@@ -480,6 +480,12 @@ Sensitive content should not automatically be duplicated into logs. The audit sy
 
 The current workstation implementation provides a local SQLite audit boundary with an append-only sequence and SHA-256 predecessor hash chain. This detects post-write modification when the database is reopened or appended to, but it is not yet an externally anchored, access-controlled, encrypted, or independently replicated audit service. Those controls are required before production or multi-user deployment.
 
+## 21A. Identity and Policy Boundary
+
+Core must establish authorization context; callers must not be trusted to self-assign identity or role. The current synthetic boundary provides an `IdentityAuthority` that issues short-lived signed credentials and validates issuer membership, expiry, revocation, and signature before a tool decision. Praetor fingerprints its loaded tool policies and rejects authorization when the policy set has changed since initialization.
+
+This is a local contract demonstration, not enterprise authentication. The authority secret is process-local, credentials are not yet backed by an external identity provider, and policy fingerprints are not externally anchored. Those controls remain prerequisites for multi-user or real-tool deployment.
+
 ## 22. Trust Boundaries
 
 Initial trust boundaries should include:

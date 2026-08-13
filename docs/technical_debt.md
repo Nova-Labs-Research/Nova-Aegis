@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-009 - Synthetic identity and policy integrity boundary
+
+- **Phase:** 9
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added `IdentityAuthority` and short-lived `IdentityCredential` contracts with issuer membership, signature, expiry, and revocation checks. Added Praetor policy fingerprints and fail-closed detection of post-load policy mutation.
+- **What broke or was discovered:** Tool authorization previously accepted caller-supplied `user_id` and `role`, and mutable in-memory policies had no integrity signal.
+- **Root cause:** The MVP modeled identity and policy as function inputs and convenience dictionaries rather than controlled security boundaries.
+- **Fix applied or proposed:** Preserve legacy calls for synthetic compatibility, but provide an explicit credential path that resolves server-issued authorization context before Praetor evaluation. Refuse execution when policy integrity changes.
+- **Why this fix:** It demonstrates the authority boundary and tests spoofing, revocation, expiry, confused-deputy resistance, and policy tampering without introducing an unverified external identity dependency.
+- **Remaining risk:** The issuer secret is process-local; credentials are not externally authenticated; policy fingerprints are not externally anchored; legacy caller-supplied context remains available for the synthetic MVP; and no real MCP gateway enforces the contract.
+- **Refactor required:** Yes before multi-user deployment, real MCP tools, or production authorization; no before the Phase 10 audit.
+- **Related controls:** High-level architecture Section 21A, threat model identity spoofing, policy tampering, confused deputy, INV-ID-001, INV-ID-002, INV-AUTH-002, INV-AUTH-003.
+- **Tests added:** Issued identity authorization, forged credential rejection, revocation, expiry, policy mutation, and direct fingerprint verification.
+- **Tests still missing:** External identity integration, credential transport protection, key rotation, policy version persistence, delegated authority constraints, gateway-side enforcement, and concurrent revocation.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 10 audit and before any real integration.
+
 ### TD-008 - Durable tamper-evident audit boundary
 
 - **Phase:** 8
