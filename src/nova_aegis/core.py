@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
 import re
+from uuid import uuid4
 from typing import Any, Iterable
 
 
@@ -28,6 +29,16 @@ class Evidence:
     source_id: str
     title: str
     text: str
+    revision_id: str = "unknown"
+    authority: str = "unclassified"
+
+
+@dataclass(frozen=True)
+class Provenance:
+    source_id: str
+    title: str
+    revision_id: str
+    authority: str
 
 
 @dataclass(frozen=True)
@@ -35,6 +46,24 @@ class Citation:
     source_id: str
     title: str
     excerpt: str
+    retrieval_score: int
+    provenance: Provenance
+
+
+@dataclass(frozen=True)
+class Response:
+    answer: str | None
+    evidence: tuple[Citation, ...]
+    assurance: AssuranceStatus
+    warning: str | None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "answer": self.answer,
+            "evidence": [asdict(citation) for citation in self.evidence],
+            "assurance": self.assurance.value,
+            "warning": self.warning,
+        }
 
 
 @dataclass(frozen=True)
@@ -46,12 +75,27 @@ class Decision:
 class AuditLog:
     """Append-only in-memory audit log for the workstation MVP."""
 
+    EVENT_TYPES = frozenset(
+        {
+            "request_received",
+            "retrieval_completed",
+            "response_proposed",
+            "response_assured",
+            "response_blocked",
+            "tool_blocked",
+            "tool_executed",
+        }
+    )
+
     def __init__(self) -> None:
         self._events: list[dict[str, Any]] = []
 
     def append(self, event_type: str, **details: Any) -> None:
+        if event_type not in self.EVENT_TYPES:
+            raise ValueError(f"Unsupported audit event type: {event_type}")
         self._events.append(
             {
+                "event_id": str(uuid4()),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "event_type": event_type,
                 **details,
@@ -84,10 +128,15 @@ class LocalRetriever:
         self._documents = tuple(documents)
 
     def retrieve(self, question: str, limit: int = 3) -> tuple[Citation, ...]:
+        if not isinstance(question, str) or not question.strip():
+            raise ValueError("Question must be a non-empty string")
+        if limit < 1:
+            raise ValueError("Retrieval limit must be positive")
         question_terms = self._terms(question)
         ranked: list[tuple[int, Evidence]] = []
         for document in self._documents:
-            score = len(question_terms & self._terms(document.text))
+            document_terms = self._terms(f"{document.title} {document.text}")
+            score = len(question_terms & document_terms)
             if score:
                 ranked.append((score, document))
         ranked.sort(key=lambda item: (-item[0], item[1].source_id))
@@ -96,8 +145,15 @@ class LocalRetriever:
                 source_id=document.source_id,
                 title=document.title,
                 excerpt=document.text,
+                retrieval_score=score,
+                provenance=Provenance(
+                    source_id=document.source_id,
+                    title=document.title,
+                    revision_id=document.revision_id,
+                    authority=document.authority,
+                ),
             )
-            for _, document in ranked[:limit]
+            for score, document in ranked[:limit]
         )
 
     @staticmethod
@@ -166,36 +222,50 @@ class NovaAegisMVP:
         self.synthetic_tool = synthetic_tool or SyntheticTool()
 
     def answer(self, question: str) -> dict[str, Any]:
+        request_id = str(uuid4())
+        self.audit_log.append("request_received", request_id=request_id, question=question)
         citations = self.retriever.retrieve(question)
+        self.audit_log.append(
+            "retrieval_completed",
+            request_id=request_id,
+            source_ids=[citation.source_id for citation in citations],
+        )
         proposed_answer = self._propose_answer(question, citations)
+        self.audit_log.append(
+            "response_proposed",
+            request_id=request_id,
+            has_answer=proposed_answer is not None,
+        )
         try:
             decision = self.praetor.evaluate_response(citations)
         except GovernanceUnavailable as error:
             self.audit_log.append(
                 "response_blocked",
+                request_id=request_id,
                 question=question,
                 reason=str(error),
             )
-            return {
-                "answer": None,
-                "evidence": [asdict(citation) for citation in citations],
-                "assurance": AssuranceStatus.REVIEW.value,
-                "warning": str(error),
-            }
+            return Response(
+                answer=None,
+                evidence=citations,
+                assurance=AssuranceStatus.REVIEW,
+                warning=str(error),
+            ).to_dict()
 
-        result = {
-            "answer": proposed_answer if decision.status is AssuranceStatus.PASS else None,
-            "evidence": [asdict(citation) for citation in citations],
-            "assurance": decision.status.value,
-            "warning": None if decision.status is AssuranceStatus.PASS else decision.reason,
-        }
+        response = Response(
+            answer=proposed_answer if decision.status is AssuranceStatus.PASS else None,
+            evidence=citations,
+            assurance=decision.status,
+            warning=None if decision.status is AssuranceStatus.PASS else decision.reason,
+        )
         self.audit_log.append(
             "response_assured",
+            request_id=request_id,
             question=question,
             assurance=decision.status.value,
             source_ids=[citation.source_id for citation in citations],
         )
-        return result
+        return response.to_dict()
 
     def execute_synthetic_tool(
         self,
@@ -204,6 +274,24 @@ class NovaAegisMVP:
         value: str,
         authorized_tools: frozenset[str] = frozenset(),
     ) -> dict[str, Any]:
+        request_id = str(uuid4())
+        if not isinstance(target, str) or not target.strip():
+            self.audit_log.append(
+                "tool_blocked",
+                request_id=request_id,
+                tool=self.synthetic_tool.name,
+                reason="Tool target must be a non-empty string",
+            )
+            raise ValueError("Tool target must be a non-empty string")
+        if not isinstance(value, str) or not value.strip():
+            self.audit_log.append(
+                "tool_blocked",
+                request_id=request_id,
+                tool=self.synthetic_tool.name,
+                target=target,
+                reason="Tool value must be a non-empty string",
+            )
+            raise ValueError("Tool value must be a non-empty string")
         try:
             decision = self.praetor.authorize_tool(
                 self.synthetic_tool.name,
@@ -212,6 +300,7 @@ class NovaAegisMVP:
         except GovernanceUnavailable as error:
             self.audit_log.append(
                 "tool_blocked",
+                request_id=request_id,
                 tool=self.synthetic_tool.name,
                 target=target,
                 reason=str(error),
@@ -221,6 +310,7 @@ class NovaAegisMVP:
         if decision.status is not AssuranceStatus.PASS:
             self.audit_log.append(
                 "tool_blocked",
+                request_id=request_id,
                 tool=self.synthetic_tool.name,
                 target=target,
                 assurance=decision.status.value,
@@ -235,6 +325,7 @@ class NovaAegisMVP:
         result = self.synthetic_tool.execute(target, value)
         self.audit_log.append(
             "tool_executed",
+            request_id=request_id,
             tool=self.synthetic_tool.name,
             target=target,
             assurance=decision.status.value,

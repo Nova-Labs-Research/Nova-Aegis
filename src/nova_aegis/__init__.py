@@ -8,6 +8,8 @@ from .core import (
     LocalRetriever,
     NovaAegisMVP,
     Praetor,
+    Provenance,
+    Response,
     SyntheticTool,
 )
 
@@ -19,5 +21,7 @@ __all__ = [
     "LocalRetriever",
     "NovaAegisMVP",
     "Praetor",
+    "Provenance",
+    "Response",
     "SyntheticTool",
 ]

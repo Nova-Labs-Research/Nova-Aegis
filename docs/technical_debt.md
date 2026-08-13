@@ -39,6 +39,22 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-002 - Structured evidence and audit contracts
+
+- **Phase:** 2
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added structured response and provenance contracts, retrieval scores, typed audit events, request correlation IDs, input validation, and adversarial evidence tests.
+- **What broke or was discovered:** Title-referenced documents were not discoverable because retrieval initially indexed document text only. The initial audit events also had no stable event taxonomy or correlation identifier.
+- **Root cause:** The first vertical slice optimized for the shortest behavior path and left evidence metadata and event contracts implicit.
+- **Fix applied or proposed:** Include document titles in lexical retrieval; add `Provenance`, `Response`, supported audit event types, event IDs, request IDs, and explicit validation for empty questions and tool parameters.
+- **Why this fix:** Evidence must be discoverable and traceable, while audit records must be structurally recognizable across the request path.
+- **Remaining risk:** Provenance is currently caller-supplied and in-memory; citations are not yet independently hash-verified, persisted, or conflict-aware.
+- **Refactor required:** Yes before persistent or multi-user deployment; no before the next synthetic-corpus phase.
+- **Related controls:** INV-EVID-001, INV-EVID-003, INV-EVID-004, INV-AUD-001, INV-FAIL-003.
+- **Tests added:** Provenance and score assertions, audit event sequence, instruction-like evidence isolation, malformed tool parameters, and invalid-question rejection.
+- **Tests still missing:** Source hashing, revision conflict handling, durable audit storage, schema serialization, and independent provenance verification.
+
 ### TD-001 - Dependency-free MVP infrastructure
 
 - **Phase:** 1
