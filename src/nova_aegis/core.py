@@ -240,11 +240,8 @@ class Praetor:
             return Decision(AssuranceStatus.REVIEW, "No supporting evidence was retrieved")
         if any(citation.provenance.authority == "unclassified" for citation in citations):
             return Decision(AssuranceStatus.REVIEW, "Evidence provenance is not classified")
-        if any(
-            citation.provenance.status in {"stale", "superseded"}
-            for citation in citations
-        ):
-            return Decision(AssuranceStatus.REVIEW, "Retrieved evidence includes stale or superseded material")
+        if any(citation.provenance.status != "current" for citation in citations):
+            return Decision(AssuranceStatus.REVIEW, "Retrieved evidence is not current")
         if any(not citation.provenance.provenance_verified for citation in citations):
             return Decision(AssuranceStatus.REVIEW, "Evidence provenance could not be independently verified")
         claims_by_group: dict[str, set[str]] = {}

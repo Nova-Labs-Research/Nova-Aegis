@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-007 - STRIDE-AI and MITRE ATLAS adversarial coverage
+
+- **Phase:** 7
+- **Status:** In progress
+- **Severity:** Medium
+- **What changed:** Added a STRIDE-AI working crosswalk and MITRE ATLAS technique-area mapping to the threat model. Added dedicated Praetor and NIC adversarial tests for mixed trust, duplicate unverified claims, unknown lifecycle state, unknown roles, and unknown tools.
+- **What broke or was discovered:** The mapping exposes that real Cortex memory, MCP tool-result validation, authenticated identity, and model/artifact integrity controls are still absent. The MVP previously had no dedicated adversarial suite boundary for these components.
+- **Root cause:** The implementation is still a local vertical slice; several architecture components remain contracts or named boundaries rather than executable services.
+- **Fix applied or proposed:** Keep the crosswalk explicit about partial and unimplemented coverage. Require executable tests before marking an ATLAS technique covered.
+- **Why this fix:** Threat-framework labels are useful only when tied to a concrete asset, boundary, control, and test result.
+- **Remaining risk:** ATLAS coverage is incomplete and the live matrix may evolve. No production security or framework conformance claim is made.
+- **Refactor required:** Yes before real MCP, memory, model supply-chain, or multi-user integration; no before continued synthetic testing.
+- **Related controls:** Threat model Sections 42A-44, INV-EVID-003 through INV-EVID-006, INV-AUTH-001 through INV-AUTH-003, INV-MCP-001, INV-NET-001.
+- **Tests added:** Dedicated NIC and Praetor adversarial suite; full suite remains pytest-discoverable.
+- **Tests still missing:** Memory poisoning, tool-description poisoning, tool-result validation, authenticated identity spoofing, artifact substitution, exfiltration, resource exhaustion, and evaluator disagreement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 10 audit or before any real integration.
+
 ### TD-006 - Phase 6 adversarial evidence assurance
 
 - **Phase:** 6

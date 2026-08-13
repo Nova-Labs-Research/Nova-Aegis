@@ -505,6 +505,39 @@ Cortex working memory must be scoped by session and authorization boundary. Pers
 
 ## 43. Threat Validation Strategy
 
+## 42A. STRIDE-AI and MITRE ATLAS Crosswalk
+
+This crosswalk extends traditional STRIDE with AI-specific failure modes. It is an engineering taxonomy for Nova Aegis, not a claim that STRIDE-AI replaces the canonical STRIDE method. MITRE ATLAS is used as the AI threat vocabulary and should be rechecked because its matrix is a living knowledge base.
+
+### STRIDE-AI working profile
+
+| Category | Nova Aegis attack surface | Required control or test |
+|---|---|---|
+| **Spoofing** | Caller identity, delegated authority, document source, model identity, MCP server identity | Authenticated Core context, verified provenance, exact model identity, authenticated gateway endpoints |
+| **Tampering** | Documents, graph edges, embeddings, memory, policies, model artifacts, audit events, tool parameters | Hashes and revisions, protected policy store, artifact verification, append-only audit, parameter authorization |
+| **Repudiation** | Tool calls, policy decisions, evidence transformations, human approvals | Correlated structured audit events with protected timestamps and decision inputs |
+| **Information disclosure** | Retrieval results, prompts, memory, logs, model telemetry, MCP responses, fallback providers | Data minimization, session isolation, outbound deny-by-default, no implicit cloud fallback |
+| **Denial of service** | Context windows, lexical/vector retrieval, graph traversal, model resources, tool chains, audit storage | Limits, budgets, timeouts, bounded loops, quotas, degraded fail-closed behavior |
+| **Elevation of privilege** | Prompt injection, confused deputy, capability reuse, policy manipulation, direct MCP routes | Praetor and gateway enforcement, least privilege, operation-level policy, no self-granted authority |
+| **AI-specific manipulation** | RAG poisoning, context poisoning, jailbreaks, adversarial ranking, tool-result injection, evaluator manipulation | Provenance verification, contradiction preservation, independent deterministic checks, `REVIEW` on unresolved uncertainty |
+
+### MITRE ATLAS mapping
+
+The following mapping uses technique names from the [MITRE ATLAS matrix](https://atlas.mitre.org/matrices/ATLAS-matrix). Technique names and coverage must be revalidated against the live matrix during each fifth-phase audit.
+
+| ATLAS technique area | Nova Aegis scenario | Current status |
+|---|---|---|
+| **LLM Prompt Injection** | Retrieved documents or tool responses attempt to issue executable instructions | Partially tested: NIC keeps unclassified instruction-like content at `REVIEW` |
+| **RAG Poisoning** | A document is crafted to rank highly or introduce a false operational claim | Partially tested: provenance and claim conflict checks; source verification remains debt |
+| **AI Agent Context Poisoning** | Malicious content is reinforced into Cortex working or persistent memory | Not implemented: memory is not yet present |
+| **AI Agent Tool Poisoning / Tool Data Poisoning** | A tool description or result changes intended action scope | Not implemented: real MCP gateway and response validation remain debt |
+| **LLM Jailbreak** | User or evidence content attempts to bypass policy reasoning | Partially controlled: deterministic Praetor authorization remains independent of model text |
+| **AI Supply Chain Compromise** | Model, runtime, package, or execution provider is substituted or tampered with | Boundary exists; artifact and cache verification remain debt |
+| **Manipulate AI Model** | A changed local model produces decisions under a trusted label | Partially controlled: provider/model identity is exposed; hash verification remains debt |
+| **Exfiltration** | Sensitive evidence leaves through tools, logs, telemetry, or cloud fallback | Architectural control only: network enforcement and durable data-loss controls remain debt |
+
+The crosswalk produces concrete test families rather than compliance claims. A mapped technique is considered covered only when an executable test demonstrates the control for the relevant operating profile.
+
 Each major threat should eventually produce one or more test fixtures.
 
 ### THREAT-NIC-001

@@ -241,7 +241,7 @@ def test_stale_evidence_requires_review() -> None:
     result = app.answer("What approval does restarting Service A require?")
 
     assert result["assurance"] == "REVIEW"
-    assert "stale or superseded" in result["warning"]
+    assert "not current" in result["warning"]
 
 
 def test_unverified_provenance_requires_review() -> None:
