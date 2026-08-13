@@ -352,6 +352,7 @@ class AuditLog:
             "response_proposed",
             "response_assured",
             "response_blocked",
+            "tool_authorized",
             "tool_blocked",
             "tool_executed",
         }
@@ -840,6 +841,23 @@ class NovaAegisMVP:
                 "result": None,
                 "assurance": decision.status.value,
                 "warning": decision.reason,
+            }
+
+        try:
+            self.audit_log.append(
+                "tool_authorized",
+                request_id=request_id,
+                tool=self.synthetic_tool.name,
+                target=target,
+                user_id=context.user_id,
+                role=context.role,
+                assurance=decision.status.value,
+            )
+        except Exception as error:
+            return {
+                "result": None,
+                "assurance": AssuranceStatus.FAIL.value,
+                "warning": f"Audit authorization recording failed: {error}",
             }
 
         result = self.synthetic_tool.execute(target, value)

@@ -475,6 +475,8 @@ Model assignment should remain configurable.
 
 Important events should produce structured audit records. Each request should receive a correlation identifier that propagates across components.
 
+For sensitive tool execution, audit recording is part of the authorization boundary. The current synthetic flow records a `tool_authorized` event before execution and refuses the action if that preflight record cannot be written. A later `tool_executed` event records the result. This ordering ensures an audit outage cannot make execution more permissive.
+
 Example fields include:
 
 ```text

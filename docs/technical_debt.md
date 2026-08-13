@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-014 - Governed durable audit integration
+
+- **Phase:** 14
+- **Status:** Resolved for synthetic tool flow
+- **Severity:** High
+- **What changed:** Added end-to-end integration tests for `NovaAegisMVP` with `SQLiteAuditLog` and added a required `tool_authorized` audit preflight before synthetic execution.
+- **What broke or was discovered:** The prior flow executed a synthetic tool before writing its `tool_executed` event. An audit failure at that point could leave an executed action without a completed execution record.
+- **Root cause:** Audit was treated as post-execution observability instead of part of the authorization path.
+- **Fix applied or proposed:** Record authorization intent before execution and return `FAIL` without executing when that append fails. Continue to write the execution result after successful action completion.
+- **Why this fix:** It enforces INV-AUD-003: audit subsystem failure cannot increase authority or permit execution.
+- **Remaining risk:** The preflight guarantees an authorization record but a process failure after execution can still prevent the completion/result event. Durable recovery, transactional tool adapters, external anchoring, and real MCP enforcement are not implemented.
+- **Refactor required:** Yes before consequential tools or production audit guarantees; no before the Phase 15 audit.
+- **Related controls:** High-level architecture Section 21, INV-AUD-001, INV-AUD-002, INV-AUD-003, INV-FAIL-002, STRIDE-AI repudiation.
+- **Tests added:** Durable response/tool lifecycle, blocked tool audit, and preflight audit failure blocks execution.
+- **Tests still missing:** Crash recovery between execution and completion record, concurrent audit/tool operations, transactional MCP adapters, real storage outage, and result verification.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 15 audit and before consequential tool integration.
+
 ### TD-013 - Agent K deterministic evidence trace
 
 - **Phase:** 13
