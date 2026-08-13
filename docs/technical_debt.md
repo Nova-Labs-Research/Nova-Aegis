@@ -44,15 +44,15 @@ Each phase record must answer:
 - **Phase:** 19
 - **Status:** Mitigated
 - **Severity:** Medium
-- **What changed:** Added signed, client-held synthetic `McpTaskState` envelopes bound to user, role, audience, tool, and canonical parameters. Added stateless gateway request validation for task-state integrity, exact `Mcp-Method`/`Mcp-Name` header-body consistency, and untrusted `_meta` handling.
-- **What broke or was discovered:** Phase 18 lacked an executable control for the June 2026 stateless-era risks: client-held state tampering, gateway routing desynchronization, and metadata-driven privilege confusion.
+- **What changed:** Added signed, client-held synthetic `McpTaskState` envelopes bound to user, role, audience, tool, and canonical parameters. Added stateless gateway request validation for task-state integrity, exact `Mcp-Method`/`Mcp-Name` header-body consistency, untrusted `_meta` handling, and process-local replay protection that returns a stored result instead of re-executing a completed task.
+- **What broke or was discovered:** Phase 18 lacked an executable control for the June 2026 stateless-era risks: client-held state tampering, gateway routing desynchronization, metadata-driven privilege confusion, and replay of a valid signed task state. The replay flaw was found during Phase 20 audit preparation and fixed before the gate.
 - **Root cause:** The initial synthetic gateway modeled access-token authorization only, not stateless task continuation or gateway routing boundaries.
-- **Fix applied or proposed:** Sign task state server-side, bind it to the current credential and operation, validate it on every request, reject header/body mismatch, and reject metadata that purports to establish identity or authorization.
+- **Fix applied or proposed:** Sign task state server-side, bind it to the current credential and operation, validate it on every request, return stored results for completed task IDs, reject header/body mismatch, and reject metadata that purports to establish identity or authorization.
 - **Why this fix:** Client-held state and metadata are untrusted input. A gateway must not let either silently change identity, routing, or tool scope.
-- **Remaining risk:** No real 2026-07-28 MCP transport, task state machine, task quotas/cancellation, replay/revocation registry, distributed state store, Apps sandbox/XSS policy, HTTP header canonicalization, or proxy/server desync testing exists.
+- **Remaining risk:** No real 2026-07-28 MCP transport, durable task state machine, task quotas/cancellation, distributed replay/revocation registry, Apps sandbox/XSS policy, HTTP header canonicalization, or proxy/server desync testing exists.
 - **Refactor required:** Yes before real MCP 2026-07-28 integration; no before synthetic Phase 20 audit.
 - **Related controls:** High-level architecture Section 17, AUD15-005, INV-MCP-001 through INV-MCP-004, INV-FAIL-003, June 25, 2026 MCP security analysis.
-- **Tests added:** Valid signed stateless request, task-state operation tampering, header/body desynchronization, benign metadata, and authorization metadata poisoning.
+- **Tests added:** Valid signed stateless request, task-state operation tampering, header/body desynchronization, benign metadata, authorization metadata poisoning, and replay return without duplicate execution.
 - **Tests still missing:** Stateful task lifecycle, cancellation, quotas, replay control, metadata namespace policy, Apps security, HTTP/proxy behavior, and real OAuth/transport integration.
 - **Owner:** Nova Aegis
 - **Review date:** Phase 20 audit or before real MCP integration.

@@ -255,3 +255,28 @@ def test_stateless_gateway_rejects_header_body_desync_and_authorization_meta() -
         "mcp_request_blocked",
         "mcp_request_blocked",
     ]
+
+
+def test_stateless_gateway_returns_stored_result_without_replaying_task() -> None:
+    _, gateway, audit, credential, executions = gateway_setup()
+    token = issue_tool_token(gateway, credential)
+    request = stateless_request(gateway, token)
+    headers = {"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"}
+
+    first = gateway.invoke_stateless(
+        access_token=token,
+        headers=headers,
+        request=request,
+    )
+    replay = gateway.invoke_stateless(
+        access_token=token,
+        headers=headers,
+        request=request,
+    )
+
+    assert first["assurance"] == "PASS"
+    assert replay["assurance"] == "PASS"
+    assert replay["result"] == first["result"]
+    assert "already completed" in replay["warning"]
+    assert len(executions) == 1
+    assert audit.events[-1]["event_type"] == "mcp_task_replay_returned"

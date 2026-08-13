@@ -371,6 +371,7 @@ class AuditLog:
             "tool_recovery_required",
             "mcp_request_blocked",
             "mcp_tool_executed",
+            "mcp_task_replay_returned",
         }
     )
 

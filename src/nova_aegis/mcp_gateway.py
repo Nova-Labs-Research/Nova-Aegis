@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 import secrets
+import threading
 import time
 from typing import Any, Callable, Mapping
 
@@ -92,6 +93,9 @@ class McpGateway:
         self._secret = secret or secrets.token_bytes(32)
         self._lifetime_seconds = lifetime_seconds
         self._issued_tokens: dict[str, IdentityCredential] = {}
+        self._task_lock = threading.Lock()
+        self._completed_tasks: dict[str, dict[str, str]] = {}
+        self._inflight_tasks: set[str] = set()
 
     def create_task_state(
         self,
@@ -189,7 +193,7 @@ class McpGateway:
             self._validate_request_headers(headers, request)
             self._validate_task_state(request.task_state, context, request)
             self._validate_meta(request.meta)
-            return self._invoke_authorized(access_token, request.name, request.parameters, context)
+            return self._invoke_stateless_once(access_token, request, context)
         except (IdentityError, McpGatewayError, ValueError) as error:
             return self._blocked(request.name, str(error))
 
@@ -225,6 +229,45 @@ class McpGateway:
             scopes=sorted(access_token.scopes),
         )
         return {"result": result, "assurance": AssuranceStatus.PASS.value, "warning": None}
+
+    def _invoke_stateless_once(
+        self,
+        access_token: McpAccessToken,
+        request: McpGatewayRequest,
+        context: AuthorizationContext,
+    ) -> dict[str, Any]:
+        task_id = request.task_state.task_id
+        with self._task_lock:
+            completed = self._completed_tasks.get(task_id)
+            if completed is not None:
+                self._audit_log.append(
+                    "mcp_task_replay_returned",
+                    task_id=task_id,
+                    tool=request.name,
+                    user_id=context.user_id,
+                )
+                return {
+                    "result": dict(completed),
+                    "assurance": AssuranceStatus.PASS.value,
+                    "warning": "MCP task already completed; returning the stored result",
+                }
+            if task_id in self._inflight_tasks:
+                raise McpGatewayError("MCP task is already in progress")
+            self._inflight_tasks.add(task_id)
+        try:
+            response = self._invoke_authorized(
+                access_token,
+                request.name,
+                request.parameters,
+                context,
+            )
+            if response["assurance"] == AssuranceStatus.PASS.value:
+                with self._task_lock:
+                    self._completed_tasks[task_id] = dict(response["result"])
+            return response
+        finally:
+            with self._task_lock:
+                self._inflight_tasks.discard(task_id)
 
     def _blocked(self, tool_name: str, reason: str) -> dict[str, Any]:
         self._audit_log.append("mcp_request_blocked", tool=tool_name, reason=reason)

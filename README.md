@@ -6,7 +6,7 @@
 
 Nova Aegis is an experimental architecture under development by **Nova Labs Research**. It explores how local-first systems can preserve evidence, provenance, uncertainty, authorization boundaries, and reviewability while coordinating AI-assisted work.
 
-This repository captures the architecture, threat model, security invariants, and initial design requirements. It is not a production platform, an autonomous investigator, or a system for determining truth. The documents describe intended boundaries and research questions; they do not claim that those mechanisms are implemented or validated.
+This repository captures the architecture, threat model, security invariants, and a dependency-free synthetic implementation of core governed-flow controls. It is not a production platform, an autonomous investigator, a real MCP server, or a system for determining truth.
 
 ## Architectural Frame
 
@@ -35,9 +35,22 @@ These names describe research boundaries, not independent products or claims of 
 
 ## Repository Status
 
-**Status: Architecture and threat-modeling phase**
+**Status: Synthetic governed-workstation proof**
 
-The implementation surface is intentionally small while the conceptual contract is being tested. New mechanisms should fit the canonical flow, preserve uncertainty and lineage, and be introduced as core, auxiliary, or experimental work.
+The executable slice currently demonstrates local retrieval/evidence assurance, Agent K rule traces, semantic/deterministic fusion, synthetic identity and policy checks, tamper-evident local audit, idempotent execution receipts, and a synthetic MCP Gateway.
+
+It does **not** implement a real MCP HTTP/OAuth server, a live semantic evaluator, a verified authoritative corpus, external identity, protected production audit storage, distributed task state, or real consequential tools.
+
+## Current Validation
+
+Run the local test suite from the repository root:
+
+```powershell
+$env:PYTHONPATH = (Join-Path (Get-Location) 'src')
+pytest -q
+```
+
+The current audit gate is [Phase 20](docs/audits/phase-20-audit.md): synthetic work may continue, while networked MCP, Apps/Tasks, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
 
 ## Documents
 
@@ -48,6 +61,10 @@ The implementation surface is intentionally small while the conceptual contract 
 - [Security invariants](docs/security_invariants.md)
 - [Technical debt ledger](docs/technical_debt.md)
 - [Five-phase audit policy](docs/audit_policy.md)
+- [Phase 5 audit](docs/audits/phase-05-audit.md)
+- [Phase 10 audit](docs/audits/phase-10-audit.md)
+- [Phase 15 audit](docs/audits/phase-15-audit.md)
+- [Phase 20 audit](docs/audits/phase-20-audit.md)
 - [Conceptual heritage](references/conceptual_heritage.md)
 - [Canonical flow](architecture/diagrams/canonical-flow.md)
 
