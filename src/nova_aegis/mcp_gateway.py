@@ -67,6 +67,13 @@ class McpGatewayRequest:
     meta: Mapping[str, Any] | None = None
 
 
+@dataclass
+class _TaskRecord:
+    user_id: str
+    expires_at: int
+    status: str
+
+
 class McpGateway:
     """A synthetic server-side MCP boundary; it is not an OAuth or HTTP implementation."""
 
@@ -80,11 +87,14 @@ class McpGateway:
         tools: Mapping[str, McpToolDescriptor],
         secret: bytes | None = None,
         lifetime_seconds: int = 300,
+        max_active_tasks_per_user: int = 2,
     ) -> None:
         if not resource_uri.startswith("https://"):
             raise ValueError("MCP resource URI must use HTTPS")
         if lifetime_seconds < 1:
             raise ValueError("MCP token lifetime must be positive")
+        if max_active_tasks_per_user < 1:
+            raise ValueError("MCP active task quota must be positive")
         self.resource_uri = resource_uri.rstrip("/")
         self._identity_authority = identity_authority
         self._praetor = praetor
@@ -92,10 +102,12 @@ class McpGateway:
         self._tools = dict(tools)
         self._secret = secret or secrets.token_bytes(32)
         self._lifetime_seconds = lifetime_seconds
+        self._max_active_tasks_per_user = max_active_tasks_per_user
         self._issued_tokens: dict[str, IdentityCredential] = {}
         self._task_lock = threading.Lock()
         self._completed_tasks: dict[str, dict[str, str]] = {}
         self._inflight_tasks: set[str] = set()
+        self._tasks: dict[str, _TaskRecord] = {}
 
     def create_task_state(
         self,
@@ -107,6 +119,14 @@ class McpGateway:
         context = self._validate_token(access_token)
         if tool_name not in self._tools:
             raise McpGatewayError("MCP tool is not registered")
+        with self._task_lock:
+            self._expire_tasks()
+            active_count = sum(
+                record.user_id == context.user_id and record.status in {"pending", "in_progress"}
+                for record in self._tasks.values()
+            )
+            if active_count >= self._max_active_tasks_per_user:
+                raise McpGatewayError("MCP active task quota is exhausted")
         parameters_hash = self._parameters_hash(parameters)
         issued_at = int(time.time())
         expires_at = issued_at + self._lifetime_seconds
@@ -120,7 +140,7 @@ class McpGateway:
             issued_at,
             expires_at,
         )
-        return McpTaskState(
+        state = McpTaskState(
             task_id,
             context.user_id,
             context.role,
@@ -131,6 +151,42 @@ class McpGateway:
             expires_at,
             signature,
         )
+        with self._task_lock:
+            self._tasks[task_id] = _TaskRecord(context.user_id, expires_at, "pending")
+        self._audit_log.append(
+            "mcp_task_created",
+            task_id=task_id,
+            tool=tool_name,
+            user_id=context.user_id,
+        )
+        return state
+
+    def cancel_task(
+        self,
+        *,
+        access_token: McpAccessToken,
+        task_state: McpTaskState,
+    ) -> None:
+        context = self._validate_token(access_token)
+        self._validate_task_identity(task_state, context)
+        with self._task_lock:
+            self._expire_tasks()
+            record = self._tasks.get(task_state.task_id)
+            if record is None or record.status != "pending":
+                raise McpGatewayError("MCP task cannot be cancelled in its current state")
+            record.status = "cancelled"
+        self._audit_log.append(
+            "mcp_task_cancelled",
+            task_id=task_state.task_id,
+            tool=task_state.tool_name,
+            user_id=context.user_id,
+        )
+
+    def task_status(self, task_state: McpTaskState) -> str:
+        with self._task_lock:
+            self._expire_tasks()
+            record = self._tasks.get(task_state.task_id)
+            return record.status if record is not None else "unknown"
 
     def discover_tools(self, credential: IdentityCredential) -> tuple[McpToolDescriptor, ...]:
         context = self._identity_authority.authenticate(credential)
@@ -253,6 +309,12 @@ class McpGateway:
                 }
             if task_id in self._inflight_tasks:
                 raise McpGatewayError("MCP task is already in progress")
+            record = self._tasks.get(task_id)
+            if record is None or record.status == "cancelled":
+                raise McpGatewayError("MCP task is not active")
+            if record.status != "pending":
+                raise McpGatewayError("MCP task is not available for execution")
+            record.status = "in_progress"
             self._inflight_tasks.add(task_id)
         try:
             response = self._invoke_authorized(
@@ -264,10 +326,14 @@ class McpGateway:
             if response["assurance"] == AssuranceStatus.PASS.value:
                 with self._task_lock:
                     self._completed_tasks[task_id] = dict(response["result"])
+                    self._tasks[task_id].status = "completed"
             return response
         finally:
             with self._task_lock:
                 self._inflight_tasks.discard(task_id)
+                record = self._tasks.get(task_id)
+                if record is not None and record.status == "in_progress":
+                    record.status = "pending"
 
     def _blocked(self, tool_name: str, reason: str) -> dict[str, Any]:
         self._audit_log.append("mcp_request_blocked", tool=tool_name, reason=reason)
@@ -333,20 +399,27 @@ class McpGateway:
     ) -> None:
         if not isinstance(task_state, McpTaskState):
             raise McpGatewayError("MCP task state is invalid")
+        self._validate_task_identity(task_state, context)
+        if task_state.tool_name != request.name or task_state.parameters_hash != self._parameters_hash(request.parameters):
+            raise McpGatewayError("MCP task state does not match the request identity or operation")
+
+    def _validate_task_identity(
+        self,
+        task_state: McpTaskState,
+        context: AuthorizationContext,
+    ) -> None:
+        if not isinstance(task_state, McpTaskState):
+            raise McpGatewayError("MCP task state is invalid")
         if task_state.expires_at <= int(time.time()):
             raise McpGatewayError("MCP task state is expired")
         if (
             task_state.user_id,
             task_state.role,
             task_state.audience,
-            task_state.tool_name,
-            task_state.parameters_hash,
         ) != (
             context.user_id,
             context.role,
             self.resource_uri,
-            request.name,
-            self._parameters_hash(request.parameters),
         ):
             raise McpGatewayError("MCP task state does not match the request identity or operation")
         expected = self._sign_task(
@@ -360,6 +433,12 @@ class McpGateway:
         )
         if not secrets.compare_digest(task_state.signature, expected):
             raise McpGatewayError("MCP task state signature is invalid")
+
+    def _expire_tasks(self) -> None:
+        now = int(time.time())
+        for record in self._tasks.values():
+            if record.status in {"pending", "in_progress"} and record.expires_at <= now:
+                record.status = "expired"
 
     @staticmethod
     def _validate_meta(meta: Mapping[str, Any] | None) -> None:

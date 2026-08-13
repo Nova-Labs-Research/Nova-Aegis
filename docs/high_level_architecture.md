@@ -411,6 +411,8 @@ This implements a subset of MCP authorization guidance: access tokens are audien
 
 The synthetic gateway now signs a client-held task-state envelope bound to the authenticated user, gateway audience, requested tool, and canonical parameters. It validates that envelope on every stateless request, requires `Mcp-Method` and `Mcp-Name` to exactly match the body routing fields, rejects `_meta` fields that attempt to supply identity, audience, or scope, and returns the stored result rather than replaying a completed task. The replay registry is process-local; durable distributed task state remains future work. This is a local contract test, not implementation of the 2026-07-28 transport or Tasks extension.
 
+The local task contract also enforces a per-user active-task budget and supports cancellation while a task is pending. A cancelled state is rejected before tool execution, even if its signature is still valid. This is not a long-running task runtime: it has no durable queue, distributed lease, cancellation of already-running work, timeout enforcement, or resource accounting beyond local task admission.
+
 ## 18. Initial MCP Capability Categories
 
 Initial workstation experiments may expose a small number of controlled local capabilities.

@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-021 - Synthetic task quota and cancellation boundary
+
+- **Phase:** 21
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added a local MCP task lifecycle with `pending`, `in_progress`, `completed`, `cancelled`, and expiry handling. The gateway now enforces a per-user active-task quota and permits cancellation only before execution.
+- **What broke or was discovered:** Signed task-state integrity and replay protection did not prevent an attacker from creating unbounded pending tasks or invoking a state that had been cancelled in the server-side lifecycle.
+- **Root cause:** Phase 19 modeled task integrity but not task admission, lifecycle state, or resource limits.
+- **Fix applied or proposed:** Track a local task record for each signed task, reject creation beyond the user quota, reject cancelled/non-active state before invocation, and record task creation/cancellation audit events.
+- **Why this fix:** Stateless envelopes still need bounded server-side resource admission. A valid signature must not outlive cancellation authority.
+- **Remaining risk:** The lifecycle is process-local and synchronous. No durable queue, distributed lease, task ownership transfer, timeout, running-task interruption, cancellation race handling, memory/CPU accounting, per-tool cost budget, or operator workflow exists.
+- **Refactor required:** Yes before real MCP Tasks or long-running work; no before synthetic Phase 22 work.
+- **Related controls:** High-level architecture Section 17, AUD20-002, AUD20-005, INV-LOOP-001, INV-HUMAN-001, MCP 2026 Tasks security considerations.
+- **Tests added:** Per-user active-task quota exhaustion, pending-task cancellation, cancelled signed-state invocation rejection, and lifecycle audit events.
+- **Tests still missing:** Durable restart recovery, distributed quota/lease behavior, cancellation during execution, timeout enforcement, quota bypass concurrency, resource metering, task-result retention, and real Tasks extension interoperability.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 25 audit or before real MCP Tasks integration.
+
 ### TD-019 - Stateless MCP task and routing integrity
 
 - **Phase:** 19

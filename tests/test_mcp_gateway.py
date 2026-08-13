@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+import pytest
+
 from nova_aegis import (
     IdentityAuthority,
     McpGateway,
+    McpGatewayError,
     McpGatewayRequest,
     McpToolDescriptor,
     Praetor,
@@ -17,7 +20,7 @@ SCOPE = "mcp:tool:synthetic-status-update"
 READ_SCOPE = "mcp:tool:diagnostic-read"
 
 
-def gateway_setup():
+def gateway_setup(max_active_tasks_per_user=2):
     identity = IdentityAuthority(secret=b"mcp-gateway-identity-secret")
     policy = ToolPolicy(
         tool_name="synthetic_status_update",
@@ -56,6 +59,7 @@ def gateway_setup():
             ),
         },
         secret=b"mcp-gateway-token-secret",
+        max_active_tasks_per_user=max_active_tasks_per_user,
     )
     credential = identity.issue("operator-01", "operator")
     return identity, gateway, audit, credential, executions
@@ -144,7 +148,7 @@ def test_gateway_rejects_missing_scope_and_unknown_schema_field() -> None:
     assert schema_result["assurance"] == "FAIL"
     assert "schema" in schema_result["warning"]
     assert executions == []
-    assert [event["event_type"] for event in audit.events] == [
+    assert [event["event_type"] for event in audit.events[-2:]] == [
         "mcp_request_blocked",
         "mcp_request_blocked",
     ]
@@ -251,7 +255,7 @@ def test_stateless_gateway_rejects_header_body_desync_and_authorization_meta() -
     assert poisoned_meta["assurance"] == "FAIL"
     assert "_meta cannot supply identity" in poisoned_meta["warning"]
     assert executions == []
-    assert [event["event_type"] for event in audit.events] == [
+    assert [event["event_type"] for event in audit.events[-2:]] == [
         "mcp_request_blocked",
         "mcp_request_blocked",
     ]
@@ -280,3 +284,47 @@ def test_stateless_gateway_returns_stored_result_without_replaying_task() -> Non
     assert "already completed" in replay["warning"]
     assert len(executions) == 1
     assert audit.events[-1]["event_type"] == "mcp_task_replay_returned"
+
+
+def test_gateway_enforces_per_user_active_task_quota() -> None:
+    _, gateway, audit, credential, _ = gateway_setup(max_active_tasks_per_user=1)
+    token = issue_tool_token(gateway, credential)
+    parameters = {"target": "service-a", "value": "restart"}
+
+    first = gateway.create_task_state(
+        access_token=token,
+        tool_name="synthetic_status_update",
+        parameters=parameters,
+    )
+
+    with pytest.raises(McpGatewayError, match="quota is exhausted"):
+        gateway.create_task_state(
+            access_token=token,
+            tool_name="synthetic_status_update",
+            parameters=parameters,
+        )
+
+    assert gateway.task_status(first) == "pending"
+    assert audit.events[-1]["event_type"] == "mcp_task_created"
+
+
+def test_gateway_cancellation_blocks_signed_task_before_execution() -> None:
+    _, gateway, audit, credential, executions = gateway_setup()
+    token = issue_tool_token(gateway, credential)
+    request = stateless_request(gateway, token)
+    gateway.cancel_task(access_token=token, task_state=request.task_state)
+
+    result = gateway.invoke_stateless(
+        access_token=token,
+        headers={"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"},
+        request=request,
+    )
+
+    assert gateway.task_status(request.task_state) == "cancelled"
+    assert result["assurance"] == "FAIL"
+    assert "not active" in result["warning"]
+    assert executions == []
+    assert [event["event_type"] for event in audit.events[-2:]] == [
+        "mcp_task_cancelled",
+        "mcp_request_blocked",
+    ]
