@@ -3,6 +3,7 @@
 from .core import (
     AssuranceStatus,
     AuditLog,
+    AuditIntegrityError,
     AuthorizationContext,
     Evidence,
     GovernanceUnavailable,
@@ -11,6 +12,7 @@ from .core import (
     Praetor,
     Provenance,
     Response,
+    SQLiteAuditLog,
     SyntheticTool,
     ToolPolicy,
 )
@@ -26,6 +28,7 @@ from .inference import (
 __all__ = [
     "AssuranceStatus",
     "AuditLog",
+    "AuditIntegrityError",
     "AuthorizationContext",
     "Evidence",
     "GovernanceUnavailable",
@@ -34,6 +37,7 @@ __all__ = [
     "Praetor",
     "Provenance",
     "Response",
+    "SQLiteAuditLog",
     "SyntheticTool",
     "ToolPolicy",
     "FoundryLocalProvider",

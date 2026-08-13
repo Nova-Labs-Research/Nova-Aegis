@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-008 - Durable tamper-evident audit boundary
+
+- **Phase:** 8
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added `SQLiteAuditLog`, a dependency-free local durable audit store with event allowlisting, transactional persistence, deterministic JSON serialization, and a SHA-256 predecessor hash chain. Exported it through the public package API.
+- **What broke or was discovered:** The prior audit implementation lost all events when the process ended and provided no integrity signal after database modification.
+- **Root cause:** The initial vertical slice intentionally stored audit events only in memory.
+- **Fix applied or proposed:** Preserve the existing audit interface while allowing `NovaAegisMVP` to receive a SQLite-backed store. Verify the chain before reads and before appends; refuse operations after integrity failure.
+- **Why this fix:** It establishes a small local persistence boundary without introducing a service dependency, while making silent post-write changes detectable within the database trust model.
+- **Remaining risk:** The SQLite file is not yet encrypted, access-controlled, externally anchored, independently replicated, or protected against a privileged database administrator. Recovery, retention, key management, and concurrent-writer behavior remain unimplemented.
+- **Refactor required:** Yes before production, multi-user deployment, or claiming durable audit assurance; no before the next local storage slice.
+- **Related controls:** High-level architecture Sections 21-22 and 26-27, INV-AUD-001 through INV-AUD-004, STRIDE-AI repudiation and tampering.
+- **Tests added:** Persistence across reopen, hash-chain verification, tamper detection, append refusal after tampering, and unsupported event rejection.
+- **Tests still missing:** Concurrent writers, crash recovery, retention/deletion policy, encrypted storage, external anchoring, authorization to read audit data, and sensitive-log minimization.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 10 audit or before production audit storage.
+
 ### TD-007 - STRIDE-AI and MITRE ATLAS adversarial coverage
 
 - **Phase:** 7

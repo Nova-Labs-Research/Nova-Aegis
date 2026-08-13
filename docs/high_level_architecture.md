@@ -478,6 +478,8 @@ result
 
 Sensitive content should not automatically be duplicated into logs. The audit system should prioritize reconstructability while respecting organizational data-handling policy.
 
+The current workstation implementation provides a local SQLite audit boundary with an append-only sequence and SHA-256 predecessor hash chain. This detects post-write modification when the database is reopened or appended to, but it is not yet an externally anchored, access-controlled, encrypted, or independently replicated audit service. Those controls are required before production or multi-user deployment.
+
 ## 22. Trust Boundaries
 
 Initial trust boundaries should include:
@@ -612,6 +614,8 @@ Machine-readable governance rules.
 ### Audit Store
 
 Structured operational and governance events.
+
+The MVP implementation uses SQLite behind the `SQLiteAuditLog` interface. The store verifies its hash chain before reads and before accepting new events, and refuses to continue when integrity verification fails.
 
 These should remain logically separated even if the MVP initially uses lightweight technologies.
 

@@ -9,7 +9,10 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
+import hashlib
+import json
 import re
+import sqlite3
 from uuid import uuid4
 from typing import Any, Iterable, Mapping
 
@@ -22,6 +25,10 @@ class AssuranceStatus(str, Enum):
 
 class GovernanceUnavailable(RuntimeError):
     """Raised when a governed operation cannot obtain a Praetor decision."""
+
+
+class AuditIntegrityError(RuntimeError):
+    """Raised when a durable audit chain is missing or has been altered."""
 
 
 @dataclass(frozen=True)
@@ -149,6 +156,139 @@ class AuditLog:
     @property
     def events(self) -> tuple[dict[str, Any], ...]:
         return tuple(self._events)
+
+
+class SQLiteAuditLog:
+    """Local durable audit log with a tamper-evident hash chain."""
+
+    EVENT_TYPES = AuditLog.EVENT_TYPES
+    _RESERVED_FIELDS = frozenset({"event_id", "timestamp", "event_type", "event_hash"})
+
+    def __init__(self, database: str) -> None:
+        self._connection = sqlite3.connect(database)
+        self._connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS audit_events (
+                sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id TEXT NOT NULL UNIQUE,
+                timestamp TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                details_json TEXT NOT NULL,
+                previous_hash TEXT NOT NULL,
+                event_hash TEXT NOT NULL UNIQUE
+            )
+            """
+        )
+        self._connection.commit()
+
+    def append(self, event_type: str, **details: Any) -> None:
+        if event_type not in self.EVENT_TYPES:
+            raise ValueError(f"Unsupported audit event type: {event_type}")
+        if self._RESERVED_FIELDS.intersection(details):
+            raise ValueError("Audit details cannot overwrite reserved event fields")
+        self.verify_integrity()
+        event = {
+            "event_id": str(uuid4()),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event_type": event_type,
+            **details,
+        }
+        details_json = json.dumps(details, sort_keys=True, separators=(",", ":"))
+        previous_hash = self._connection.execute(
+            "SELECT event_hash FROM audit_events ORDER BY sequence DESC LIMIT 1"
+        ).fetchone()
+        previous_hash_value = previous_hash[0] if previous_hash else "GENESIS"
+        event_hash = self._hash_event(
+            event,
+            details_json=details_json,
+            previous_hash=previous_hash_value,
+        )
+        self._connection.execute(
+            """
+            INSERT INTO audit_events
+                (event_id, timestamp, event_type, details_json, previous_hash, event_hash)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                event["event_id"],
+                event["timestamp"],
+                event_type,
+                details_json,
+                previous_hash_value,
+                event_hash,
+            ),
+        )
+        self._connection.commit()
+
+    @property
+    def events(self) -> tuple[dict[str, Any], ...]:
+        self.verify_integrity()
+        rows = self._connection.execute(
+            """
+            SELECT event_id, timestamp, event_type, details_json, event_hash
+            FROM audit_events ORDER BY sequence
+            """
+        ).fetchall()
+        return tuple(
+            {
+                "event_id": event_id,
+                "timestamp": timestamp,
+                "event_type": event_type,
+                **json.loads(details_json),
+                "event_hash": event_hash,
+            }
+            for event_id, timestamp, event_type, details_json, event_hash in rows
+        )
+
+    def verify_integrity(self) -> None:
+        rows = self._connection.execute(
+            """
+            SELECT event_id, timestamp, event_type, details_json, previous_hash, event_hash
+            FROM audit_events ORDER BY sequence
+            """
+        ).fetchall()
+        expected_previous_hash = "GENESIS"
+        for row in rows:
+            event_id, timestamp, event_type, details_json, previous_hash, event_hash = row
+            if previous_hash != expected_previous_hash:
+                raise AuditIntegrityError("Audit hash chain predecessor is invalid")
+            event = {
+                "event_id": event_id,
+                "timestamp": timestamp,
+                "event_type": event_type,
+                **json.loads(details_json),
+            }
+            expected_hash = self._hash_event(
+                event,
+                details_json=details_json,
+                previous_hash=previous_hash,
+            )
+            if event_hash != expected_hash:
+                raise AuditIntegrityError("Audit event integrity verification failed")
+            expected_previous_hash = event_hash
+
+    @staticmethod
+    def _hash_event(
+        event: Mapping[str, Any],
+        *,
+        details_json: str,
+        previous_hash: str,
+    ) -> str:
+        payload = json.dumps(
+            {
+                "event_id": event["event_id"],
+                "timestamp": event["timestamp"],
+                "event_type": event["event_type"],
+                "details": details_json,
+                "previous_hash": previous_hash,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+
+    def close(self) -> None:
+        self._connection.close()
 
 
 class LocalRetriever:
