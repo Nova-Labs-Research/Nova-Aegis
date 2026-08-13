@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-010 - Phase 10 mandatory audit findings
+
+- **Phase:** 10
+- **Status:** Accepted for synthetic MVP; blocking before real integrations
+- **Severity:** Medium
+- **What changed:** Audited Phases 6-9 across evidence assurance, STRIDE-AI/ATLAS coverage, durable audit, identity, policy integrity, source, tests, and invariant behavior.
+- **What broke or was discovered:** No Critical or High issue was confirmed for the synthetic profile, but identity, policy, audit, MCP, and provenance controls remain process-local or application-only.
+- **Root cause:** The implementation is still a deliberately bounded local proof and retains compatibility paths that are not trusted security roots.
+- **Fix applied or proposed:** Continue synthetic-only work; block real data, real tools, and production inference until AUD10-001 through AUD10-005 are re-audited at their actual integration boundaries.
+- **Why this fix:** It preserves momentum without treating passing unit tests as evidence of production security.
+- **Remaining risk:** A deployment outside the evaluated profile would inherit unprotected identity, policy, audit, MCP, and provenance boundaries.
+- **Refactor required:** Yes before real integrations; no before synthetic Phase 11.
+- **Related controls:** `docs/audits/phase-10-audit.md`, INV-ID-001, INV-ID-002, INV-AUD-003, INV-MCP-001, INV-EVID-004, STRIDE-AI and MITRE ATLAS crosswalk.
+- **Tests added:** Mandatory audit validation, direct identity/policy/audit probes, and the Phase 9 identity-policy suite.
+- **Tests still missing:** Enterprise identity, protected policy administration, gateway enforcement, external audit anchoring, verified provenance, memory, graph, model supply chain, network isolation, and concurrency.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 15 audit or before any real integration.
+
 ### TD-009 - Synthetic identity and policy integrity boundary
 
 - **Phase:** 9
