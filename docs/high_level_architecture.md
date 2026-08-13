@@ -403,6 +403,12 @@ Its responsibilities may include:
 
 The MCP Gateway should not override Praetor authorization decisions.
 
+### Synthetic MCP Gateway Contract
+
+The current MVP includes a synthetic, in-process `McpGateway` for boundary testing. It is not an MCP HTTP server or OAuth implementation. It binds a gateway-issued access token to the canonical HTTPS resource URI, validates the audience and backing identity on every request, requires a registered least-privilege tool scope, validates exact request parameters, invokes Praetor server-side, limits discovery by role, and records allow/deny events.
+
+This follows the official MCP 2025-06 authorization and security guidance: access tokens must be audience-bound to the MCP resource server, token passthrough is prohibited, every HTTP request requires authorization in a real HTTP deployment, and scope semantics must be minimized. Full Protected Resource Metadata, OAuth 2.1/PKCE, HTTP transport, redirect handling, consent, SSRF controls, session handling, and real server response validation remain unimplemented.
+
 ## 18. Initial MCP Capability Categories
 
 Initial workstation experiments may expose a small number of controlled local capabilities.

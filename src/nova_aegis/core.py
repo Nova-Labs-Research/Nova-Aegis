@@ -369,6 +369,8 @@ class AuditLog:
             "tool_blocked",
             "tool_executed",
             "tool_recovery_required",
+            "mcp_request_blocked",
+            "mcp_tool_executed",
         }
     )
 

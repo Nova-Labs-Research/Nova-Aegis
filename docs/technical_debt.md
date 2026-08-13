@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-018 - Synthetic MCP Gateway security boundary
+
+- **Phase:** 18
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added an in-process `McpGateway` contract with HTTPS resource identity, gateway-issued audience-bound tokens, backing-credential revalidation, per-tool scopes, role-limited discovery, exact request schemas, server-side Praetor checks, and structured allow/deny audit events.
+- **What broke or was discovered:** Tool authorization had only an application-local path; there was no independently testable gateway layer to reject bypassed, wrong-audience, over-scoped, malformed, revoked-identity, or unregistered-tool requests.
+- **Root cause:** MCP was previously an architecture boundary without an executable enforcement contract.
+- **Fix applied or proposed:** Implement a synthetic server-owned gateway contract. Never accept token passthrough, require the exact gateway audience, and validate the backing credential for every request.
+- **Why this fix:** It exercises the security shape required by MCP authorization guidance without introducing a networked service or claiming OAuth/HTTP conformance.
+- **Remaining risk:** This is not a real MCP transport, OAuth 2.1 resource server, Protected Resource Metadata endpoint, PKCE flow, consent system, SSRF defense, session implementation, sandbox, external server inventory, tool response validator, or real execution-receipt adapter.
+- **Refactor required:** Yes before real MCP or multi-user deployment; no before continued synthetic gateway hardening.
+- **Related controls:** High-level architecture Sections 15-17, AUD15-005, INV-MCP-001 through INV-MCP-004, INV-ID-001, INV-ID-002, MCP Authorization Specification (2025-06-18) and Security Best Practices.
+- **Tests added:** Authorized scoped call, wrong audience, valid narrow-scope denial, schema rejection, revoked identity, role-limited discovery, unknown tool, and audit events.
+- **Tests still missing:** HTTP authorization headers, OAuth 2.1/PKCE, Protected Resource Metadata, redirect/state validation, consent, token rotation/storage, SSRF, session hijacking, tool response validation, real server compromise, sandboxing, and network isolation.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 20 audit or before real MCP integration.
+
 ### TD-017 - Idempotent execution receipt and recovery boundary
 
 - **Phase:** 17

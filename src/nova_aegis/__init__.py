@@ -34,6 +34,7 @@ from .inference import (
     ModelManifest,
     ProviderState,
 )
+from .mcp_gateway import McpAccessToken, McpGateway, McpGatewayError, McpToolDescriptor
 
 __all__ = [
     "AgentK",
@@ -66,4 +67,8 @@ __all__ = [
     "InferenceUnavailable",
     "ModelManifest",
     "ProviderState",
+    "McpAccessToken",
+    "McpGateway",
+    "McpGatewayError",
+    "McpToolDescriptor",
 ]
