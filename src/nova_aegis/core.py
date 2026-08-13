@@ -16,7 +16,7 @@ import sqlite3
 import secrets
 import time
 from uuid import uuid4
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 
 class AssuranceStatus(str, Enum):
@@ -135,7 +135,9 @@ class HybridAssurance:
             AssuranceStatus.REVIEW,
             "Independent evaluators did not jointly support PASS: "
             f"deterministic={deterministic.status.value}; "
-            f"semantic={semantic.status.value}",
+            f"semantic={semantic.status.value}; "
+            f"deterministic_reason={deterministic.reason}; "
+            f"semantic_reason={semantic.reason}",
         )
 
 
@@ -491,6 +493,8 @@ class Praetor:
         self,
         available: bool = True,
         tool_policies: Mapping[str, ToolPolicy] | None = None,
+        deterministic_evaluator: Callable[[tuple[Citation, ...]], EvaluationDecision] | None = None,
+        semantic_evaluator: Callable[[tuple[Citation, ...]], EvaluationDecision] | None = None,
     ) -> None:
         self.available = available
         self.tool_policies = dict(
@@ -505,17 +509,61 @@ class Praetor:
             }
         )
         self._policy_fingerprint = _policy_fingerprint(self.tool_policies)
+        self._deterministic_evaluator = (
+            deterministic_evaluator or self._default_deterministic_evaluator
+        )
+        self._semantic_evaluator = semantic_evaluator or self._default_semantic_evaluator
+        self.hybrid_assurance = HybridAssurance()
 
     def evaluate_response(self, citations: tuple[Citation, ...]) -> Decision:
+        _, _, decision = self.evaluate_response_with_trace(citations)
+        return decision
+
+    def evaluate_response_with_trace(
+        self,
+        citations: tuple[Citation, ...],
+    ) -> tuple[EvaluationDecision, EvaluationDecision, Decision]:
         self._require_available()
+        deterministic = self._run_response_evaluator(
+            self._deterministic_evaluator,
+            EvaluatorKind.DETERMINISTIC,
+            citations,
+        )
+        semantic = self._run_response_evaluator(
+            self._semantic_evaluator,
+            EvaluatorKind.SEMANTIC,
+            citations,
+        )
+        return deterministic, semantic, self.hybrid_assurance.fuse(deterministic, semantic)
+
+    @staticmethod
+    def _default_deterministic_evaluator(
+        citations: tuple[Citation, ...],
+    ) -> EvaluationDecision:
         if not citations:
-            return Decision(AssuranceStatus.REVIEW, "No supporting evidence was retrieved")
+            return EvaluationDecision(
+                EvaluatorKind.DETERMINISTIC,
+                AssuranceStatus.REVIEW,
+                "No supporting evidence was retrieved",
+            )
         if any(citation.provenance.authority == "unclassified" for citation in citations):
-            return Decision(AssuranceStatus.REVIEW, "Evidence provenance is not classified")
+            return EvaluationDecision(
+                EvaluatorKind.DETERMINISTIC,
+                AssuranceStatus.REVIEW,
+                "Evidence provenance is not classified",
+            )
         if any(citation.provenance.status != "current" for citation in citations):
-            return Decision(AssuranceStatus.REVIEW, "Retrieved evidence is not current")
+            return EvaluationDecision(
+                EvaluatorKind.DETERMINISTIC,
+                AssuranceStatus.REVIEW,
+                "Retrieved evidence is not current",
+            )
         if any(not citation.provenance.provenance_verified for citation in citations):
-            return Decision(AssuranceStatus.REVIEW, "Evidence provenance could not be independently verified")
+            return EvaluationDecision(
+                EvaluatorKind.DETERMINISTIC,
+                AssuranceStatus.REVIEW,
+                "Evidence provenance could not be independently verified",
+            )
         claims_by_group: dict[str, set[str]] = {}
         for citation in citations:
             if citation.claim_group and citation.claim:
@@ -523,8 +571,48 @@ class Praetor:
                     citation.claim.strip().casefold()
                 )
         if any(len(claims) > 1 for claims in claims_by_group.values()):
-            return Decision(AssuranceStatus.REVIEW, "Retrieved evidence contains unresolved conflicting claims")
-        return Decision(AssuranceStatus.PASS, "Response has local supporting evidence")
+            return EvaluationDecision(
+                EvaluatorKind.DETERMINISTIC,
+                AssuranceStatus.REVIEW,
+                "Retrieved evidence contains unresolved conflicting claims",
+            )
+        return EvaluationDecision(
+            EvaluatorKind.DETERMINISTIC,
+            AssuranceStatus.PASS,
+            "Response has local supporting evidence",
+        )
+
+    @staticmethod
+    def _default_semantic_evaluator(
+        citations: tuple[Citation, ...],
+    ) -> EvaluationDecision:
+        return EvaluationDecision(
+            EvaluatorKind.SEMANTIC,
+            AssuranceStatus.PASS,
+            "Synthetic semantic evaluator found no additional concern",
+        )
+
+    @staticmethod
+    def _run_response_evaluator(
+        evaluator: Callable[[tuple[Citation, ...]], EvaluationDecision],
+        expected_kind: EvaluatorKind,
+        citations: tuple[Citation, ...],
+    ) -> EvaluationDecision:
+        try:
+            decision = evaluator(citations)
+        except Exception as error:
+            return EvaluationDecision(
+                expected_kind,
+                AssuranceStatus.REVIEW,
+                f"{expected_kind.value.capitalize()} evaluator is unavailable: {error}",
+            )
+        if not isinstance(decision, EvaluationDecision) or decision.evaluator is not expected_kind:
+            return EvaluationDecision(
+                expected_kind,
+                AssuranceStatus.REVIEW,
+                f"{expected_kind.value.capitalize()} evaluator returned an invalid decision",
+            )
+        return decision
 
     def authorize_tool(
         self,
@@ -603,7 +691,7 @@ class NovaAegisMVP:
             has_answer=proposed_answer is not None,
         )
         try:
-            decision = self.praetor.evaluate_response(citations)
+            deterministic, semantic, decision = self.praetor.evaluate_response_with_trace(citations)
         except GovernanceUnavailable as error:
             self.audit_log.append(
                 "response_blocked",
@@ -630,6 +718,10 @@ class NovaAegisMVP:
             question=question,
             assurance=decision.status.value,
             source_ids=[citation.source_id for citation in citations],
+            deterministic_status=deterministic.status.value,
+            deterministic_reason=deterministic.reason,
+            semantic_status=semantic.status.value,
+            semantic_reason=semantic.reason,
         )
         return response.to_dict()
 

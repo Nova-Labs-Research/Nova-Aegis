@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-012 - Praetor response-path hybrid integration
+
+- **Phase:** 12
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Integrated injected deterministic and semantic evaluators into `Praetor.evaluate_response_with_trace`. The response path now fuses both verdicts and audits evaluator statuses and reasons with the final assurance decision.
+- **What broke or was discovered:** The Phase 11 fusion contract was standalone, so response assurance neither invoked both evaluators nor retained their separate verdicts in the audit trail.
+- **Root cause:** The original Praetor response path performed deterministic evidence checks inline and returned a single untraceable decision.
+- **Fix applied or proposed:** Route response assurance through labeled evaluator contracts and `HybridAssurance`. Convert evaluator exception or mislabeled output to `REVIEW` before fusion.
+- **Why this fix:** A semantic evaluator must be independently observable and unable to convert uncertainty, failure, or injection into an approved response.
+- **Remaining risk:** The semantic evaluator is a synthetic default; Agent K is not separately implemented; no evaluator isolation, prompt construction, suppression layer, confidence calibration, or real model/provider lifecycle exists.
+- **Refactor required:** Yes before live semantic evaluation or any claim of production hybrid assurance; no before continued synthetic governance work.
+- **Related controls:** High-level architecture Section 13, threat model Sections 19-21, INV-GOV-001 through INV-GOV-004, INV-AUD-001, INV-AUD-002.
+- **Tests added:** Response-path semantic concern, deterministic hard failure, semantic evaluator outage, evaluator-kind mismatch, and audit-verdict assertions.
+- **Tests still missing:** Live semantic evaluator isolation, evaluator prompt injection, repeated-run behavior, deterministic Agent K traces, evaluator model provenance, and tool-path hybrid fusion.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 15 audit or before live semantic evaluator integration.
+
 ### TD-011 - Fixed hybrid assurance fusion contract
 
 - **Phase:** 11

@@ -316,6 +316,8 @@ every other combination        -> REVIEW
 
 This makes a deterministic hard-boundary failure terminal, while a semantic failure or review prevents PASS without independently authorizing an action. The contract is unit-tested against semantic misrepresentation, structural-tag omission, hard safety boundary, and evaluator-injection fixtures.
 
+The current Praetor response path injects both evaluators, fuses their independent verdicts, and records both statuses and reasons with the fused audit event. Evaluator exception, unavailable evaluation, or evaluator-kind mismatch becomes `REVIEW`; it cannot silently retain or create `PASS`. The default semantic evaluator is a synthetic stub and must be replaced only through an isolated, audited provider boundary.
+
 The rule was informed by the locally provided August 2026 *Hybrid AI Evaluation and Governance Study* (`SHA-256: 932ABDBC32A10E76BE755251BD308ABBE4F2D07CBFE4C3AF5159F310D6AA96A1`). That report is research input, not an authority source or production validation: it records unresolved semantic-judge configuration metadata and a source-table discrepancy.
 
 > **Complementary evaluators are intended to expose different failure modes, not to create an illusion of certainty.**
