@@ -31,6 +31,10 @@ class Evidence:
     text: str
     revision_id: str = "unknown"
     authority: str = "unclassified"
+    claim_group: str | None = None
+    claim: str | None = None
+    status: str = "current"
+    provenance_verified: bool = False
 
 
 @dataclass(frozen=True)
@@ -39,6 +43,8 @@ class Provenance:
     title: str
     revision_id: str
     authority: str
+    status: str
+    provenance_verified: bool
 
 
 @dataclass(frozen=True)
@@ -48,6 +54,8 @@ class Citation:
     excerpt: str
     retrieval_score: int
     provenance: Provenance
+    claim_group: str | None = None
+    claim: str | None = None
 
 
 @dataclass(frozen=True)
@@ -187,7 +195,11 @@ class LocalRetriever:
                     title=document.title,
                     revision_id=document.revision_id,
                     authority=document.authority,
+                    status=document.status,
+                    provenance_verified=document.provenance_verified,
                 ),
+                claim_group=document.claim_group,
+                claim=document.claim,
             )
             for score, document in ranked[:limit]
         )
@@ -226,6 +238,23 @@ class Praetor:
         self._require_available()
         if not citations:
             return Decision(AssuranceStatus.REVIEW, "No supporting evidence was retrieved")
+        if any(citation.provenance.authority == "unclassified" for citation in citations):
+            return Decision(AssuranceStatus.REVIEW, "Evidence provenance is not classified")
+        if any(
+            citation.provenance.status in {"stale", "superseded"}
+            for citation in citations
+        ):
+            return Decision(AssuranceStatus.REVIEW, "Retrieved evidence includes stale or superseded material")
+        if any(not citation.provenance.provenance_verified for citation in citations):
+            return Decision(AssuranceStatus.REVIEW, "Evidence provenance could not be independently verified")
+        claims_by_group: dict[str, set[str]] = {}
+        for citation in citations:
+            if citation.claim_group and citation.claim:
+                claims_by_group.setdefault(citation.claim_group, set()).add(
+                    citation.claim.strip().casefold()
+                )
+        if any(len(claims) > 1 for claims in claims_by_group.values()):
+            return Decision(AssuranceStatus.REVIEW, "Retrieved evidence contains unresolved conflicting claims")
         return Decision(AssuranceStatus.PASS, "Response has local supporting evidence")
 
     def authorize_tool(

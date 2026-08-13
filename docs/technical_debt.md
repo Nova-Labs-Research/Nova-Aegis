@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-006 - Phase 6 adversarial evidence assurance
+
+- **Phase:** 6
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added explicit claim-group, claim, lifecycle-status, and provenance-verification metadata to evidence and citations. Praetor now returns `REVIEW` for unresolved conflicting claims, stale or superseded evidence, unclassified authority, and unverified provenance.
+- **What broke or was discovered:** The earlier MVP treated any retrieved citation as sufficient for `PASS`, including instruction-like, stale, unverified, or contradictory material.
+- **Root cause:** Retrieval presence was used as a proxy for evidence quality; conflict and lifecycle semantics were not represented in the evidence contract.
+- **Fix applied or proposed:** Make evidence quality explicit and keep ambiguous evidence visible to the reviewer while withholding the proposed answer from `PASS`.
+- **Why this fix:** It directly exercises INV-EVID-003 through INV-EVID-006 and preserves the rule that retrieval is evidence gathering, not truth establishment.
+- **Remaining risk:** Claim metadata and verification flags are still supplied by the in-memory corpus; source objects, hashes, revision relationships, graph authority, and contradiction semantics are not independently validated.
+- **Refactor required:** Yes before authoritative corpus or production deployment; no before the next synthetic phase.
+- **Related controls:** INV-EVID-001, INV-EVID-003, INV-EVID-004, INV-EVID-005, INV-EVID-006, INV-FAIL-003.
+- **Tests added:** Conflicting claims, stale evidence, unverified provenance, and unclassified instruction-like evidence all require `REVIEW`.
+- **Tests still missing:** Source-object verification, hash and revision checks, supersession relationships, contradictory evidence across retrieval limits, and durable provenance storage.
+- **Owner:** Nova Aegis
+- **Review date:** Before Phase 10 audit or any real corpus integration.
+
 ### TD-005 - Phase 5 full audit findings
 
 - **Phase:** 5

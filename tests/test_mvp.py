@@ -14,11 +14,15 @@ def documents() -> list[Evidence]:
             text="Restarting Service A requires operator approval.",
             revision_id="7",
             authority="operations-policy",
+            provenance_verified=True,
         ),
         Evidence(
             source_id="POL-001",
             title="Change Policy",
             text="Production changes must be recorded in the change log.",
+            revision_id="3",
+            authority="operations-policy",
+            provenance_verified=True,
         ),
     ]
 
@@ -180,9 +184,83 @@ def test_instruction_like_document_remains_evidence_not_authority() -> None:
 
     result = app.answer("What does the untrusted procedure say?")
 
-    assert result["assurance"] == "PASS"
+    assert result["assurance"] == "REVIEW"
     assert result["evidence"][0]["provenance"]["authority"] == "unclassified"
+    assert "provenance" in result["warning"]
     assert app.synthetic_tool.executions == []
+
+
+def test_conflicting_claims_require_review() -> None:
+    app = NovaAegisMVP(
+        [
+            Evidence(
+                source_id="PROC-CURRENT",
+                title="Restart Approval Procedure",
+                text="Restarting Service A requires operator approval.",
+                revision_id="8",
+                authority="operations-policy",
+                claim_group="service-a-restart-approval",
+                claim="operator approval required",
+                provenance_verified=True,
+            ),
+            Evidence(
+                source_id="PROC-CONFLICT",
+                title="Restart Approval Exception",
+                text="Restarting Service A does not require operator approval.",
+                revision_id="4",
+                authority="operations-policy",
+                claim_group="service-a-restart-approval",
+                claim="operator approval not required",
+                provenance_verified=True,
+            ),
+        ]
+    )
+
+    result = app.answer("What approval does restarting Service A require?")
+
+    assert result["assurance"] == "REVIEW"
+    assert result["answer"] is None
+    assert "conflicting claims" in result["warning"]
+
+
+def test_stale_evidence_requires_review() -> None:
+    app = NovaAegisMVP(
+        [
+            Evidence(
+                source_id="PROC-STALE",
+                title="Stale Restart Procedure",
+                text="Restarting Service A requires operator approval.",
+                revision_id="2",
+                authority="operations-policy",
+                status="stale",
+                provenance_verified=True,
+            )
+        ]
+    )
+
+    result = app.answer("What approval does restarting Service A require?")
+
+    assert result["assurance"] == "REVIEW"
+    assert "stale or superseded" in result["warning"]
+
+
+def test_unverified_provenance_requires_review() -> None:
+    app = NovaAegisMVP(
+        [
+            Evidence(
+                source_id="PROC-UNVERIFIED",
+                title="Unverified Restart Procedure",
+                text="Restarting Service A requires operator approval.",
+                revision_id="7",
+                authority="operations-policy",
+            )
+        ]
+    )
+
+    result = app.answer("What approval does restarting Service A require?")
+
+    assert result["assurance"] == "REVIEW"
+    assert "independently verified" in result["warning"]
 
 
 def test_invalid_tool_parameters_are_blocked_and_audited(documents: list[Evidence]) -> None:
