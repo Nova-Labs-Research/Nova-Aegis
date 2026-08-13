@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-013 - Agent K deterministic evidence trace
+
+- **Phase:** 13
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Extracted response evidence checks into first-class `AgentK`, which returns an immutable ordered rule trace and deterministic evaluator decision. Praetor defaults to Agent K and audits its stable rule reason.
+- **What broke or was discovered:** Deterministic response rules were embedded in Praetor, so their source and evaluation order were not independently inspectable.
+- **Root cause:** The documented Agent K boundary had not yet been represented as an executable component.
+- **Fix applied or proposed:** Define fixed evidence rule identifiers and return the complete trace, with the first non-PASS rule controlling the deterministic outcome.
+- **Why this fix:** Deterministic reproducibility is useful only when a human can inspect which rule produced the decision.
+- **Remaining risk:** Agent K covers response evidence only. It does not yet trace tool authorization, policy versions, schemas, risk, delegation, rule signatures, rule persistence, rule conflicts, or administrative changes.
+- **Refactor required:** Yes before policy-managed production governance; no before additional synthetic rule families.
+- **Related controls:** High-level architecture Section 13, threat model Sections 19-21, INV-GOV-001 through INV-GOV-004, INV-EVID-003 through INV-EVID-006.
+- **Tests added:** Ordered valid-evidence trace, first blocking provenance rule, conflicting-claim rule, and default Praetor delegation/audit reason.
+- **Tests still missing:** Tool/policy rule traces, rule versioning, signed rule bundles, mutation testing, rule-conflict testing, and persistent rule audit.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 15 audit or before policy-managed governance.
+
 ### TD-012 - Praetor response-path hybrid integration
 
 - **Phase:** 12

@@ -296,6 +296,10 @@ Praetor should use complementary evaluation mechanisms rather than depending on 
 
 Agent K is responsible for structured checks such as policy rules, provenance requirements, required evidence, authorization conditions, trace completeness, deterministic safety boundaries, tool permissions, schema validation, and reproducible controls.
 
+The current synthetic Agent K implementation evaluates response evidence through ordered immutable rules for evidence presence, authority classification, currency, provenance verification, and unresolved claim conflicts. Each evaluation returns an inspectable rule trace with stable identifiers (`AK-EVID-001`, `AK-PROV-001`, `AK-REV-001`, `AK-PROV-002`, and `AK-CLAIM-001`). Praetor records the resulting deterministic reason with the fused assurance audit event.
+
+This is an evidence-assurance subset, not a complete production rule engine. Tool authorization, policy versioning, schema validation, risk classification, rule distribution, and rule-change approval remain separate controls or future Agent K rule families.
+
 ### Semantic LLM Judge
 
 The semantic evaluator is responsible for context-sensitive evaluation such as semantic inconsistency, misleading interpretation, subtle contradiction, hidden intent, context-dependent risk, disguised prompt injection, semantic manipulation, and claims that technically pass rules but misrepresent evidence.

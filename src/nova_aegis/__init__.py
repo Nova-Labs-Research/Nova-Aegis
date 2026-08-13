@@ -1,10 +1,12 @@
 """Minimal, local-first Nova Aegis MVP slice."""
 
 from .core import (
+    AgentK,
     AssuranceStatus,
     AuditLog,
     AuditIntegrityError,
     AuthorizationContext,
+    DeterministicTrace,
     Evidence,
     EvaluationDecision,
     EvaluatorKind,
@@ -19,6 +21,7 @@ from .core import (
     Provenance,
     PolicyIntegrityError,
     Response,
+    RuleEvaluation,
     SQLiteAuditLog,
     SyntheticTool,
     ToolPolicy,
@@ -33,10 +36,12 @@ from .inference import (
 )
 
 __all__ = [
+    "AgentK",
     "AssuranceStatus",
     "AuditLog",
     "AuditIntegrityError",
     "AuthorizationContext",
+    "DeterministicTrace",
     "Evidence",
     "EvaluationDecision",
     "EvaluatorKind",
@@ -51,6 +56,7 @@ __all__ = [
     "Provenance",
     "PolicyIntegrityError",
     "Response",
+    "RuleEvaluation",
     "SQLiteAuditLog",
     "SyntheticTool",
     "ToolPolicy",

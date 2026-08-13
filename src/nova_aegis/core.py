@@ -109,6 +109,92 @@ class EvaluationDecision:
     reason: str
 
 
+@dataclass(frozen=True)
+class RuleEvaluation:
+    rule_id: str
+    status: AssuranceStatus
+    reason: str
+
+
+@dataclass(frozen=True)
+class DeterministicTrace:
+    decision: EvaluationDecision
+    rules: tuple[RuleEvaluation, ...]
+
+
+class AgentK:
+    """Deterministic evidence evaluator with inspectable ordered rule results."""
+
+    def evaluate(self, citations: tuple[Citation, ...]) -> EvaluationDecision:
+        return self.evaluate_with_trace(citations).decision
+
+    def evaluate_with_trace(self, citations: tuple[Citation, ...]) -> DeterministicTrace:
+        rules = (
+            RuleEvaluation(
+                "AK-EVID-001",
+                AssuranceStatus.REVIEW if not citations else AssuranceStatus.PASS,
+                "No supporting evidence was retrieved" if not citations else "Evidence was retrieved",
+            ),
+            RuleEvaluation(
+                "AK-PROV-001",
+                AssuranceStatus.REVIEW
+                if any(citation.provenance.authority == "unclassified" for citation in citations)
+                else AssuranceStatus.PASS,
+                "Evidence provenance is not classified"
+                if any(citation.provenance.authority == "unclassified" for citation in citations)
+                else "Evidence authority is classified",
+            ),
+            RuleEvaluation(
+                "AK-REV-001",
+                AssuranceStatus.REVIEW
+                if any(citation.provenance.status != "current" for citation in citations)
+                else AssuranceStatus.PASS,
+                "Retrieved evidence is not current"
+                if any(citation.provenance.status != "current" for citation in citations)
+                else "Evidence is current",
+            ),
+            RuleEvaluation(
+                "AK-PROV-002",
+                AssuranceStatus.REVIEW
+                if any(not citation.provenance.provenance_verified for citation in citations)
+                else AssuranceStatus.PASS,
+                "Evidence provenance could not be independently verified"
+                if any(not citation.provenance.provenance_verified for citation in citations)
+                else "Evidence provenance is verified",
+            ),
+            self._conflict_rule(citations),
+        )
+        blocking_rule = next((rule for rule in rules if rule.status is not AssuranceStatus.PASS), None)
+        decision = EvaluationDecision(
+            EvaluatorKind.DETERMINISTIC,
+            blocking_rule.status if blocking_rule else AssuranceStatus.PASS,
+            f"{blocking_rule.rule_id}: {blocking_rule.reason}"
+            if blocking_rule
+            else "Agent K evidence rules passed",
+        )
+        return DeterministicTrace(decision=decision, rules=rules)
+
+    @staticmethod
+    def _conflict_rule(citations: tuple[Citation, ...]) -> RuleEvaluation:
+        claims_by_group: dict[str, set[str]] = {}
+        for citation in citations:
+            if citation.claim_group and citation.claim:
+                claims_by_group.setdefault(citation.claim_group, set()).add(
+                    citation.claim.strip().casefold()
+                )
+        if any(len(claims) > 1 for claims in claims_by_group.values()):
+            return RuleEvaluation(
+                "AK-CLAIM-001",
+                AssuranceStatus.REVIEW,
+                "Retrieved evidence contains unresolved conflicting claims",
+            )
+        return RuleEvaluation(
+            "AK-CLAIM-001",
+            AssuranceStatus.PASS,
+            "No unresolved conflicting claims were found",
+        )
+
+
 class HybridAssurance:
     """Fuses independent semantic and deterministic evaluation conservatively."""
 
@@ -495,6 +581,7 @@ class Praetor:
         tool_policies: Mapping[str, ToolPolicy] | None = None,
         deterministic_evaluator: Callable[[tuple[Citation, ...]], EvaluationDecision] | None = None,
         semantic_evaluator: Callable[[tuple[Citation, ...]], EvaluationDecision] | None = None,
+        agent_k: AgentK | None = None,
     ) -> None:
         self.available = available
         self.tool_policies = dict(
@@ -509,8 +596,9 @@ class Praetor:
             }
         )
         self._policy_fingerprint = _policy_fingerprint(self.tool_policies)
+        self.agent_k = agent_k or AgentK()
         self._deterministic_evaluator = (
-            deterministic_evaluator or self._default_deterministic_evaluator
+            deterministic_evaluator or self.agent_k.evaluate
         )
         self._semantic_evaluator = semantic_evaluator or self._default_semantic_evaluator
         self.hybrid_assurance = HybridAssurance()
@@ -535,52 +623,6 @@ class Praetor:
             citations,
         )
         return deterministic, semantic, self.hybrid_assurance.fuse(deterministic, semantic)
-
-    @staticmethod
-    def _default_deterministic_evaluator(
-        citations: tuple[Citation, ...],
-    ) -> EvaluationDecision:
-        if not citations:
-            return EvaluationDecision(
-                EvaluatorKind.DETERMINISTIC,
-                AssuranceStatus.REVIEW,
-                "No supporting evidence was retrieved",
-            )
-        if any(citation.provenance.authority == "unclassified" for citation in citations):
-            return EvaluationDecision(
-                EvaluatorKind.DETERMINISTIC,
-                AssuranceStatus.REVIEW,
-                "Evidence provenance is not classified",
-            )
-        if any(citation.provenance.status != "current" for citation in citations):
-            return EvaluationDecision(
-                EvaluatorKind.DETERMINISTIC,
-                AssuranceStatus.REVIEW,
-                "Retrieved evidence is not current",
-            )
-        if any(not citation.provenance.provenance_verified for citation in citations):
-            return EvaluationDecision(
-                EvaluatorKind.DETERMINISTIC,
-                AssuranceStatus.REVIEW,
-                "Evidence provenance could not be independently verified",
-            )
-        claims_by_group: dict[str, set[str]] = {}
-        for citation in citations:
-            if citation.claim_group and citation.claim:
-                claims_by_group.setdefault(citation.claim_group, set()).add(
-                    citation.claim.strip().casefold()
-                )
-        if any(len(claims) > 1 for claims in claims_by_group.values()):
-            return EvaluationDecision(
-                EvaluatorKind.DETERMINISTIC,
-                AssuranceStatus.REVIEW,
-                "Retrieved evidence contains unresolved conflicting claims",
-            )
-        return EvaluationDecision(
-            EvaluatorKind.DETERMINISTIC,
-            AssuranceStatus.PASS,
-            "Response has local supporting evidence",
-        )
 
     @staticmethod
     def _default_semantic_evaluator(
