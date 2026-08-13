@@ -374,6 +374,8 @@ class AuditLog:
             "mcp_task_replay_returned",
             "mcp_task_created",
             "mcp_task_cancelled",
+            "mcp_task_started",
+            "mcp_task_failed",
         }
     )
 

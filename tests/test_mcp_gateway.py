@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
+import threading
 
 from nova_aegis import (
     IdentityAuthority,
@@ -20,7 +21,7 @@ SCOPE = "mcp:tool:synthetic-status-update"
 READ_SCOPE = "mcp:tool:diagnostic-read"
 
 
-def gateway_setup(max_active_tasks_per_user=2):
+def gateway_setup(max_active_tasks_per_user=2, handler_override=None):
     identity = IdentityAuthority(secret=b"mcp-gateway-identity-secret")
     policy = ToolPolicy(
         tool_name="synthetic_status_update",
@@ -36,6 +37,8 @@ def gateway_setup(max_active_tasks_per_user=2):
         executions.append(result)
         return result
 
+    selected_handler = handler_override or handler
+
     from nova_aegis import AuditLog
 
     audit = AuditLog()
@@ -49,13 +52,13 @@ def gateway_setup(max_active_tasks_per_user=2):
                 name=policy.tool_name,
                 required_scope=SCOPE,
                 allowed_parameters=frozenset({"target", "value"}),
-                handler=handler,
+                handler=selected_handler,
             ),
             "diagnostic_read": McpToolDescriptor(
                 name="diagnostic_read",
                 required_scope=READ_SCOPE,
                 allowed_parameters=frozenset({"target", "value"}),
-                handler=handler,
+                handler=selected_handler,
             ),
         },
         secret=b"mcp-gateway-token-secret",
@@ -328,3 +331,62 @@ def test_gateway_cancellation_blocks_signed_task_before_execution() -> None:
         "mcp_task_cancelled",
         "mcp_request_blocked",
     ]
+
+
+def test_worker_task_failure_is_terminal_and_audited() -> None:
+    def failing_handler(_parameters):
+        raise RuntimeError("synthetic worker failure")
+
+    _, gateway, audit, credential, _ = gateway_setup(handler_override=failing_handler)
+    token = issue_tool_token(gateway, credential)
+    request = stateless_request(gateway, token)
+
+    result = gateway.run_task(
+        access_token=token,
+        headers={"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"},
+        request=request,
+    )
+
+    assert result["assurance"] == "FAIL"
+    assert "task execution failed" in result["warning"]
+    assert gateway.task_status(request.task_state) == "failed"
+    assert [event["event_type"] for event in audit.events[-2:]] == [
+        "mcp_task_started",
+        "mcp_task_failed",
+    ]
+
+
+def test_cancellation_race_cannot_cancel_running_task() -> None:
+    started = threading.Event()
+    release = threading.Event()
+
+    def blocking_handler(parameters):
+        started.set()
+        assert release.wait(timeout=1)
+        return {"tool": "synthetic_status_update", **dict(parameters)}
+
+    _, gateway, _, credential, _ = gateway_setup(handler_override=blocking_handler)
+    token = issue_tool_token(gateway, credential)
+    request = stateless_request(gateway, token)
+    result_holder = []
+
+    worker = threading.Thread(
+        target=lambda: result_holder.append(
+            gateway.run_task(
+                access_token=token,
+                headers={"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"},
+                request=request,
+            )
+        )
+    )
+    worker.start()
+    assert started.wait(timeout=1)
+
+    with pytest.raises(McpGatewayError, match="cannot be cancelled"):
+        gateway.cancel_task(access_token=token, task_state=request.task_state)
+
+    release.set()
+    worker.join(timeout=1)
+    assert not worker.is_alive()
+    assert result_holder[0]["assurance"] == "PASS"
+    assert gateway.task_status(request.task_state) == "completed"

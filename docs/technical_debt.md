@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-022 - Synthetic asynchronous task state machine
+
+- **Phase:** 22
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added explicit `submit_task` and `run_task` contracts over the local MCP task lifecycle. Handler failure now produces an audited terminal `failed` state; running tasks cannot be cancelled, preventing a cancellation/execution race from creating contradictory state.
+- **What broke or was discovered:** The Phase 21 lifecycle had no explicit worker boundary, and handler exceptions could escape while the finalizer returned the task to `pending`.
+- **Root cause:** The initial task contract modeled admission and cancellation but not worker execution ownership or terminal failure handling.
+- **Fix applied or proposed:** Claim a pending task before handler execution, expose worker execution through `run_task`, mark handler exceptions `failed`, and allow cancellation only while pending.
+- **Why this fix:** Asynchronous work needs explicit ownership and terminal states before it can be made durable or distributed. Retrying a failed/ambiguous task by default could duplicate a consequential action.
+- **Remaining risk:** No actual asynchronous scheduler, durable queue, worker identity, lease heartbeat, restart recovery, timeout, cancellation signal for running work, task-result persistence, resource metering, distributed locking, or operator reconciliation exists.
+- **Refactor required:** Yes before real workers, MCP Tasks, or long-running execution; no before synthetic Phase 23 work.
+- **Related controls:** High-level architecture Section 17, AUD20-002, AUD20-005, INV-LOOP-001, INV-FAIL-002, INV-HUMAN-001.
+- **Tests added:** Explicit worker run, handler failure to terminal state, task failure audit, and cancellation race rejection while running.
+- **Tests still missing:** Durable restart recovery, worker lease expiry/reclaim, crash injection, running-task cancellation protocol, scheduler fairness, per-tool runtime budgets, result retention, and distributed concurrency.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 25 audit or before real worker integration.
+
 ### TD-021 - Synthetic task quota and cancellation boundary
 
 - **Phase:** 21

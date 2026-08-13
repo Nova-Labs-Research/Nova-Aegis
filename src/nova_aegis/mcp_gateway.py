@@ -161,6 +161,34 @@ class McpGateway:
         )
         return state
 
+    def submit_task(
+        self,
+        *,
+        access_token: McpAccessToken,
+        tool_name: str,
+        parameters: Mapping[str, str],
+    ) -> McpTaskState:
+        """Creates a pending task for a later worker invocation."""
+        return self.create_task_state(
+            access_token=access_token,
+            tool_name=tool_name,
+            parameters=parameters,
+        )
+
+    def run_task(
+        self,
+        *,
+        access_token: McpAccessToken,
+        headers: Mapping[str, str],
+        request: McpGatewayRequest,
+    ) -> dict[str, Any]:
+        """Runs one pending synthetic task through the stateless gateway checks."""
+        return self.invoke_stateless(
+            access_token=access_token,
+            headers=headers,
+            request=request,
+        )
+
     def cancel_task(
         self,
         *,
@@ -316,6 +344,12 @@ class McpGateway:
                 raise McpGatewayError("MCP task is not available for execution")
             record.status = "in_progress"
             self._inflight_tasks.add(task_id)
+        self._audit_log.append(
+            "mcp_task_started",
+            task_id=task_id,
+            tool=request.name,
+            user_id=context.user_id,
+        )
         try:
             response = self._invoke_authorized(
                 access_token,
@@ -328,6 +362,21 @@ class McpGateway:
                     self._completed_tasks[task_id] = dict(response["result"])
                     self._tasks[task_id].status = "completed"
             return response
+        except Exception as error:
+            with self._task_lock:
+                self._tasks[task_id].status = "failed"
+            self._audit_log.append(
+                "mcp_task_failed",
+                task_id=task_id,
+                tool=request.name,
+                user_id=context.user_id,
+                reason=str(error),
+            )
+            return {
+                "result": None,
+                "assurance": AssuranceStatus.FAIL.value,
+                "warning": f"MCP task execution failed: {error}",
+            }
         finally:
             with self._task_lock:
                 self._inflight_tasks.discard(task_id)

@@ -413,6 +413,8 @@ The synthetic gateway now signs a client-held task-state envelope bound to the a
 
 The local task contract also enforces a per-user active-task budget and supports cancellation while a task is pending. A cancelled state is rejected before tool execution, even if its signature is still valid. This is not a long-running task runtime: it has no durable queue, distributed lease, cancellation of already-running work, timeout enforcement, or resource accounting beyond local task admission.
 
+For synthetic worker testing, `submit_task` creates a `pending` state and `run_task` claims it for execution. The local state machine is `pending -> in_progress -> completed | failed`, with `pending -> cancelled | expired` as terminal alternatives. Handler errors become audited `failed` tasks rather than returning them to `pending`; cancellation of an in-progress task is rejected to avoid contradictory state.
+
 ## 18. Initial MCP Capability Categories
 
 Initial workstation experiments may expose a small number of controlled local capabilities.
