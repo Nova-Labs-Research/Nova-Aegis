@@ -5,6 +5,7 @@ from dataclasses import replace
 from nova_aegis import (
     IdentityAuthority,
     McpGateway,
+    McpGatewayRequest,
     McpToolDescriptor,
     Praetor,
     ToolPolicy,
@@ -65,6 +66,21 @@ def issue_tool_token(gateway, credential):
         credential,
         audience=RESOURCE_URI,
         scopes=frozenset({SCOPE}),
+    )
+
+
+def stateless_request(gateway, token, *, parameters=None, meta=None):
+    parameters = parameters or {"target": "service-a", "value": "restart"}
+    return McpGatewayRequest(
+        method="tools/call",
+        name="synthetic_status_update",
+        parameters=parameters,
+        task_state=gateway.create_task_state(
+            access_token=token,
+            tool_name="synthetic_status_update",
+            parameters=parameters,
+        ),
+        meta=meta,
     )
 
 
@@ -167,3 +183,75 @@ def test_gateway_discovery_is_limited_by_role_and_unknown_tools_are_blocked() ->
     assert "not registered" in result["warning"]
     assert executions == []
     assert audit.events[-1]["event_type"] == "mcp_request_blocked"
+
+
+def test_stateless_gateway_validates_signed_task_state_and_ignores_safe_meta() -> None:
+    _, gateway, audit, credential, executions = gateway_setup()
+    token = issue_tool_token(gateway, credential)
+    request = stateless_request(gateway, token, meta={"client_hint": "untrusted"})
+
+    result = gateway.invoke_stateless(
+        access_token=token,
+        headers={"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"},
+        request=request,
+    )
+
+    assert result["assurance"] == "PASS"
+    assert len(executions) == 1
+    assert audit.events[-1]["event_type"] == "mcp_tool_executed"
+
+
+def test_stateless_gateway_rejects_tampered_task_state_and_operation_change() -> None:
+    _, gateway, audit, credential, executions = gateway_setup()
+    token = issue_tool_token(gateway, credential)
+    request = stateless_request(gateway, token)
+    altered_parameters = McpGatewayRequest(
+        method=request.method,
+        name=request.name,
+        parameters={"target": "service-a", "value": "status"},
+        task_state=request.task_state,
+    )
+
+    result = gateway.invoke_stateless(
+        access_token=token,
+        headers={"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"},
+        request=altered_parameters,
+    )
+
+    assert result["assurance"] == "FAIL"
+    assert "task state does not match" in result["warning"]
+    assert executions == []
+    assert audit.events[-1]["event_type"] == "mcp_request_blocked"
+
+
+def test_stateless_gateway_rejects_header_body_desync_and_authorization_meta() -> None:
+    _, gateway, audit, credential, executions = gateway_setup()
+    token = issue_tool_token(gateway, credential)
+    request = stateless_request(gateway, token)
+
+    desync = gateway.invoke_stateless(
+        access_token=token,
+        headers={"Mcp-Method": "tools/call", "Mcp-Name": "diagnostic_read"},
+        request=request,
+    )
+    poisoned_meta = gateway.invoke_stateless(
+        access_token=token,
+        headers={"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"},
+        request=McpGatewayRequest(
+            method=request.method,
+            name=request.name,
+            parameters=request.parameters,
+            task_state=request.task_state,
+            meta={"role": "admin"},
+        ),
+    )
+
+    assert desync["assurance"] == "FAIL"
+    assert "routing fields do not match" in desync["warning"]
+    assert poisoned_meta["assurance"] == "FAIL"
+    assert "_meta cannot supply identity" in poisoned_meta["warning"]
+    assert executions == []
+    assert [event["event_type"] for event in audit.events] == [
+        "mcp_request_blocked",
+        "mcp_request_blocked",
+    ]
