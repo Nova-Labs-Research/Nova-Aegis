@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from enum import Enum
 import re
 from uuid import uuid4
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 
 class AssuranceStatus(str, Enum):
@@ -70,6 +70,42 @@ class Response:
 class Decision:
     status: AssuranceStatus
     reason: str
+
+
+@dataclass(frozen=True)
+class AuthorizationContext:
+    user_id: str
+    role: str
+
+
+@dataclass(frozen=True)
+class ToolPolicy:
+    tool_name: str
+    allowed_roles: frozenset[str]
+    allowed_targets: frozenset[str]
+    allowed_values: frozenset[str]
+
+    def evaluate(
+        self,
+        context: AuthorizationContext,
+        parameters: Mapping[str, str],
+    ) -> Decision:
+        if context.role not in self.allowed_roles:
+            return Decision(
+                AssuranceStatus.FAIL,
+                f"Role is not authorized for tool: {context.role}",
+            )
+        if parameters.get("target") not in self.allowed_targets:
+            return Decision(
+                AssuranceStatus.FAIL,
+                f"Target is not authorized: {parameters.get('target')}",
+            )
+        if parameters.get("value") not in self.allowed_values:
+            return Decision(
+                AssuranceStatus.FAIL,
+                f"Operation value is not authorized: {parameters.get('value')}",
+            )
+        return Decision(AssuranceStatus.PASS, "Tool, role, target, and operation are authorized")
 
 
 class AuditLog:
@@ -168,8 +204,23 @@ class LocalRetriever:
 class Praetor:
     """Deterministic assurance boundary for responses and tool proposals."""
 
-    def __init__(self, available: bool = True) -> None:
+    def __init__(
+        self,
+        available: bool = True,
+        tool_policies: Mapping[str, ToolPolicy] | None = None,
+    ) -> None:
         self.available = available
+        self.tool_policies = dict(
+            tool_policies
+            or {
+                "synthetic_status_update": ToolPolicy(
+                    tool_name="synthetic_status_update",
+                    allowed_roles=frozenset({"default", "operator"}),
+                    allowed_targets=frozenset({"service-a"}),
+                    allowed_values=frozenset({"restart", "status"}),
+                )
+            }
+        )
 
     def evaluate_response(self, citations: tuple[Citation, ...]) -> Decision:
         self._require_available()
@@ -177,14 +228,24 @@ class Praetor:
             return Decision(AssuranceStatus.REVIEW, "No supporting evidence was retrieved")
         return Decision(AssuranceStatus.PASS, "Response has local supporting evidence")
 
-    def authorize_tool(self, tool_name: str, authorized_tools: frozenset[str]) -> Decision:
+    def authorize_tool(
+        self,
+        tool_name: str,
+        authorized_tools: frozenset[str],
+        *,
+        context: AuthorizationContext,
+        parameters: Mapping[str, str],
+    ) -> Decision:
         self._require_available()
         if tool_name not in authorized_tools:
             return Decision(
                 AssuranceStatus.FAIL,
                 f"Tool is not authorized: {tool_name}",
             )
-        return Decision(AssuranceStatus.PASS, "Tool is authorized for this request")
+        policy = self.tool_policies.get(tool_name)
+        if policy is None:
+            return Decision(AssuranceStatus.FAIL, f"No policy is defined for tool: {tool_name}")
+        return policy.evaluate(context, parameters)
 
     def _require_available(self) -> None:
         if not self.available:
@@ -273,6 +334,8 @@ class NovaAegisMVP:
         target: str,
         value: str,
         authorized_tools: frozenset[str] = frozenset(),
+        user_id: str = "anonymous",
+        role: str = "default",
     ) -> dict[str, Any]:
         request_id = str(uuid4())
         if not isinstance(target, str) or not target.strip():
@@ -296,6 +359,8 @@ class NovaAegisMVP:
             decision = self.praetor.authorize_tool(
                 self.synthetic_tool.name,
                 authorized_tools,
+                context=AuthorizationContext(user_id=user_id, role=role),
+                parameters={"target": target, "value": value},
             )
         except GovernanceUnavailable as error:
             self.audit_log.append(
@@ -313,6 +378,8 @@ class NovaAegisMVP:
                 request_id=request_id,
                 tool=self.synthetic_tool.name,
                 target=target,
+                user_id=user_id,
+                role=role,
                 assurance=decision.status.value,
                 reason=decision.reason,
             )
@@ -328,6 +395,8 @@ class NovaAegisMVP:
             request_id=request_id,
             tool=self.synthetic_tool.name,
             target=target,
+            user_id=user_id,
+            role=role,
             assurance=decision.status.value,
         )
         return {

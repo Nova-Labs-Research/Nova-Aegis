@@ -3,6 +3,7 @@
 from .core import (
     AssuranceStatus,
     AuditLog,
+    AuthorizationContext,
     Evidence,
     GovernanceUnavailable,
     LocalRetriever,
@@ -11,11 +12,13 @@ from .core import (
     Provenance,
     Response,
     SyntheticTool,
+    ToolPolicy,
 )
 
 __all__ = [
     "AssuranceStatus",
     "AuditLog",
+    "AuthorizationContext",
     "Evidence",
     "GovernanceUnavailable",
     "LocalRetriever",
@@ -24,4 +27,5 @@ __all__ = [
     "Provenance",
     "Response",
     "SyntheticTool",
+    "ToolPolicy",
 ]

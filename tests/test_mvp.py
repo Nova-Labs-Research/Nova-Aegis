@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from nova_aegis import Evidence, GovernanceUnavailable, NovaAegisMVP, Praetor
+from nova_aegis import Evidence, GovernanceUnavailable, NovaAegisMVP, Praetor, ToolPolicy
 
 
 @pytest.fixture
@@ -81,6 +81,75 @@ def test_authorized_synthetic_tool_executes_and_is_audited(documents: list[Evide
     assert result["result"]["target"] == "service-a"
     assert len(app.synthetic_tool.executions) == 1
     assert app.audit_log.events[-1]["event_type"] == "tool_executed"
+    assert app.audit_log.events[-1]["role"] == "default"
+
+
+def test_authorized_tool_cannot_target_out_of_scope_resource(documents: list[Evidence]) -> None:
+    app = NovaAegisMVP(documents)
+
+    result = app.execute_synthetic_tool(
+        target="service-b",
+        value="restart",
+        authorized_tools=frozenset({"synthetic_status_update"}),
+    )
+
+    assert result["assurance"] == "FAIL"
+    assert "Target is not authorized" in result["warning"]
+    assert app.synthetic_tool.executions == []
+
+
+def test_authorized_tool_cannot_use_out_of_scope_operation(documents: list[Evidence]) -> None:
+    app = NovaAegisMVP(documents)
+
+    result = app.execute_synthetic_tool(
+        target="service-a",
+        value="delete",
+        authorized_tools=frozenset({"synthetic_status_update"}),
+    )
+
+    assert result["assurance"] == "FAIL"
+    assert "Operation value is not authorized" in result["warning"]
+    assert app.synthetic_tool.executions == []
+
+
+def test_tool_policy_denies_role_even_when_capability_is_available(documents: list[Evidence]) -> None:
+    app = NovaAegisMVP(documents)
+
+    result = app.execute_synthetic_tool(
+        target="service-a",
+        value="restart",
+        authorized_tools=frozenset({"synthetic_status_update"}),
+        user_id="reader-01",
+        role="reader",
+    )
+
+    assert result["assurance"] == "FAIL"
+    assert "Role is not authorized" in result["warning"]
+    assert app.synthetic_tool.executions == []
+
+
+def test_custom_tool_policy_controls_operation_scope(documents: list[Evidence]) -> None:
+    policy = ToolPolicy(
+        tool_name="synthetic_status_update",
+        allowed_roles=frozenset({"operator"}),
+        allowed_targets=frozenset({"service-b"}),
+        allowed_values=frozenset({"status"}),
+    )
+    app = NovaAegisMVP(
+        documents,
+        praetor=Praetor(tool_policies={policy.tool_name: policy}),
+    )
+
+    result = app.execute_synthetic_tool(
+        target="service-b",
+        value="status",
+        authorized_tools=frozenset({"synthetic_status_update"}),
+        user_id="operator-01",
+        role="operator",
+    )
+
+    assert result["assurance"] == "PASS"
+    assert result["result"]["value"] == "status"
 
 
 def test_praetor_unavailable_blocks_tool_without_execution(documents: list[Evidence]) -> None:
