@@ -39,6 +39,22 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-005 - Phase 5 full audit findings
+
+- **Phase:** 5
+- **Status:** Accepted for synthetic MVP; blocking before real integrations
+- **Severity:** Medium
+- **What changed:** Audited Phases 1-4 against the architecture, threat model, security invariants, tests, and technical-debt ledger.
+- **What broke or was discovered:** The synthetic slice has no authenticated identity, gateway-enforced MCP boundary, durable tamper-evident audit, independent provenance verification, verified model cache, or operating-system network enforcement.
+- **Root cause:** The MVP intentionally uses in-memory state and injected metadata to test the control flow before introducing platform infrastructure.
+- **Fix applied or proposed:** Preserve the synthetic-only boundary; require these controls before real data, consequential tools, or production inference. Detailed findings are in `docs/audits/phase-05-audit.md`.
+- **Why this fix:** The current tests demonstrate bounded behavior in the evaluated profile, but application conventions are not sufficient security roots for real deployment.
+- **Remaining risk:** The MVP is not production-ready and must not be connected to real organizational data or high-impact tools.
+- **Refactor required:** Yes before real integrations; no before Phase 6 synthetic corpus work.
+- **Related controls:** Phase 5 audit, INV-ID-001, INV-ID-002, INV-MCP-001, INV-EVID-003, INV-AUD-003, INV-NET-002.
+- **Tests added:** Full 17-test suite, compilation, diagnostics, and direct invariant probes.
+- **Tests still missing:** Authenticated identity, gateway rejection, durable audit integrity, source/artifact verification, network isolation, memory, graph, conflict, and human-review tests.
+
 ### TD-004 - Provider-abstract local inference boundary
 
 - **Phase:** 4
