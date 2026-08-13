@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-011 - Fixed hybrid assurance fusion contract
+
+- **Phase:** 11
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added typed semantic and deterministic evaluation contracts plus `HybridAssurance`, a fixed fusion boundary that permits `PASS` only when both independent evaluators pass, returns `REVIEW` on disagreement or uncertainty, and preserves deterministic `FAIL` as terminal.
+- **What broke or was discovered:** Praetor had one undifferentiated decision type, so it could not represent evaluator provenance or mechanically prevent unsafe disagreement fusion.
+- **Root cause:** The hybrid architecture was documented but no executable fusion contract existed.
+- **Fix applied or proposed:** Use evaluator-labeled immutable decisions and explicit fixed rules; reject mislabeled evaluator inputs. The local research PDF is hash-recorded as design input, not treated as authority.
+- **Why this fix:** It makes the Phase 10 hybrid-fusion requirement testable without connecting a live semantic model or weakening deterministic governance.
+- **Remaining risk:** No semantic evaluator, Agent K implementation, evaluator isolation, suppression layer, confidence calibration, or integrated Praetor response path exists. The report’s judge configuration metadata is incomplete and its findings are not independently reproduced here.
+- **Refactor required:** Yes before real semantic evaluation or production governance; no before further synthetic hybrid testing.
+- **Related controls:** High-level architecture Section 13, threat model Sections 19-21, INV-GOV-002, INV-GOV-003, INV-GOV-004, STRIDE-AI AI-specific manipulation.
+- **Tests added:** Dual-PASS, semantic misrepresentation, structural-tag omission, hard safety boundary, evaluator injection, semantic review, and evaluator-label mismatch.
+- **Tests still missing:** Live evaluator isolation, stochastic repeatability, semantic prompt injection, Agent K traces, integrated response/tool fusion, confidence thresholds, and human-review workflow.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 15 audit or before live semantic evaluator integration.
+
 ### TD-010 - Phase 10 mandatory audit findings
 
 - **Phase:** 10

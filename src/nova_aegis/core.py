@@ -25,6 +25,11 @@ class AssuranceStatus(str, Enum):
     FAIL = "FAIL"
 
 
+class EvaluatorKind(str, Enum):
+    DETERMINISTIC = "deterministic"
+    SEMANTIC = "semantic"
+
+
 class GovernanceUnavailable(RuntimeError):
     """Raised when a governed operation cannot obtain a Praetor decision."""
 
@@ -95,6 +100,43 @@ class Response:
 class Decision:
     status: AssuranceStatus
     reason: str
+
+
+@dataclass(frozen=True)
+class EvaluationDecision:
+    evaluator: EvaluatorKind
+    status: AssuranceStatus
+    reason: str
+
+
+class HybridAssurance:
+    """Fuses independent semantic and deterministic evaluation conservatively."""
+
+    def fuse(
+        self,
+        deterministic: EvaluationDecision,
+        semantic: EvaluationDecision,
+    ) -> Decision:
+        if deterministic.evaluator is not EvaluatorKind.DETERMINISTIC:
+            raise ValueError("Deterministic evaluation must identify its evaluator")
+        if semantic.evaluator is not EvaluatorKind.SEMANTIC:
+            raise ValueError("Semantic evaluation must identify its evaluator")
+        if deterministic.status is AssuranceStatus.FAIL:
+            return Decision(
+                AssuranceStatus.FAIL,
+                f"Deterministic governance blocked the decision: {deterministic.reason}",
+            )
+        if (
+            deterministic.status is AssuranceStatus.PASS
+            and semantic.status is AssuranceStatus.PASS
+        ):
+            return Decision(AssuranceStatus.PASS, "Independent evaluators agreed to PASS")
+        return Decision(
+            AssuranceStatus.REVIEW,
+            "Independent evaluators did not jointly support PASS: "
+            f"deterministic={deterministic.status.value}; "
+            f"semantic={semantic.status.value}",
+        )
 
 
 @dataclass(frozen=True)
