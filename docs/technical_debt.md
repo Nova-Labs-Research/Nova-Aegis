@@ -39,6 +39,22 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-004 - Provider-abstract local inference boundary
+
+- **Phase:** 4
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added the provider-neutral inference lifecycle and a Foundry Local adapter boundary with explicit model manifests, offline provisioning, load, ready, infer, and unload states.
+- **What broke or was discovered:** Foundry Local model acquisition and execution-provider provisioning can involve network-hosted catalog or platform services, which conflicts with Nova Aegis normal-operation offline requirements if left implicit.
+- **Root cause:** The earlier architecture named Foundry Local as the initial runtime but had no executable lifecycle or provisioning enforcement.
+- **Fix applied or proposed:** Require an explicit local `ModelManifest`, reject network-enabled provisioning, inject the actual runtime function behind the adapter, and fail when no local inference implementation is available.
+- **Why this fix:** It preserves provider independence and makes offline provisioning a testable boundary instead of an assumption.
+- **Remaining risk:** The adapter does not yet call the Foundry Local SDK, verify artifact hashes, manage a persistent cache, validate execution providers, or record model lifecycle events in the audit store.
+- **Refactor required:** Yes before real model inference or production deployment; no before the synthetic corpus and governance tests.
+- **Related controls:** INV-NET-001, INV-NET-002, INV-MODEL-001, INV-MODEL-002, INV-FAIL-002.
+- **Tests added:** Offline provisioning rejection, lifecycle success, load-before-provision rejection, missing-runtime rejection, and manifest validation.
+- **Tests still missing:** Real Foundry Local integration, artifact hash verification, cache integrity, provider compatibility, model audit events, and network isolation enforcement.
+
 ### TD-003 - Policy-driven tool authorization
 
 - **Phase:** 3

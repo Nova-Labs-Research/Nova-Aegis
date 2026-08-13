@@ -14,6 +14,14 @@ from .core import (
     SyntheticTool,
     ToolPolicy,
 )
+from .inference import (
+    FoundryLocalProvider,
+    InferenceProvider,
+    InferenceResult,
+    InferenceUnavailable,
+    ModelManifest,
+    ProviderState,
+)
 
 __all__ = [
     "AssuranceStatus",
@@ -28,4 +36,10 @@ __all__ = [
     "Response",
     "SyntheticTool",
     "ToolPolicy",
+    "FoundryLocalProvider",
+    "InferenceProvider",
+    "InferenceResult",
+    "InferenceUnavailable",
+    "ModelManifest",
+    "ProviderState",
 ]
