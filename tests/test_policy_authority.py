@@ -7,6 +7,7 @@ import pytest
 from nova_aegis import (
     BoundaryPreflightReport,
     LocalSyntheticPolicyAuthority,
+    LocalSyntheticIdentityRegistry,
     PolicyApproval,
     PolicyAuthorityError,
 )
@@ -28,7 +29,8 @@ class StaticPolicyKeys:
 
 def _authority() -> tuple[LocalSyntheticPolicyAuthority, BoundaryPreflightReport, PolicyApproval]:
     keys = StaticPolicyKeys({"policy-1": b"policy-secret"}, "policy-1")
-    authority = LocalSyntheticPolicyAuthority(keys)
+    identities = LocalSyntheticIdentityRegistry({"signer-1", "reviewer-1"})
+    authority = LocalSyntheticPolicyAuthority(keys, identities)
     report = BoundaryPreflightReport("local-witness", "CONTINUE_SYNTHETIC", (), False)
     approval = PolicyApproval("approval-1", "local-witness", "CONTINUE_SYNTHETIC", "reviewer-1")
     return authority, report, approval
@@ -76,6 +78,33 @@ def test_policy_authority_rejects_production_release_and_missing_key() -> None:
             signer_id="signer-1",
         )
 
-    no_key_authority = LocalSyntheticPolicyAuthority(StaticPolicyKeys({}, None))
+    no_key_authority = LocalSyntheticPolicyAuthority(
+        StaticPolicyKeys({}, None), LocalSyntheticIdentityRegistry({"signer-1", "reviewer-1"})
+    )
     with pytest.raises(PolicyAuthorityError, match="active"):
         no_key_authority.issue(report, approval, signer_id="signer-1")
+
+
+def test_policy_authority_rejects_unknown_and_revoked_identities() -> None:
+    keys = StaticPolicyKeys({"policy-1": b"policy-secret"}, "policy-1")
+    identities = LocalSyntheticIdentityRegistry({"signer-1", "reviewer-1"})
+    authority = LocalSyntheticPolicyAuthority(keys, identities)
+    report = BoundaryPreflightReport("local-witness", "CONTINUE_SYNTHETIC", (), False)
+    approval = PolicyApproval("approval-1", "local-witness", "CONTINUE_SYNTHETIC", "reviewer-1")
+
+    with pytest.raises(PolicyAuthorityError, match="signer identity"):
+        authority.issue(report, approval, signer_id="unknown-signer")
+
+    release = authority.issue(report, approval, signer_id="signer-1")
+    identities.revoke("reviewer-1")
+    with pytest.raises(PolicyAuthorityError, match="approver identity"):
+        authority.verify(release, report, approval)
+
+
+def test_identity_registry_rejects_re_registration_after_revocation() -> None:
+    identities = LocalSyntheticIdentityRegistry()
+    identities.register("reviewer-1")
+    identities.revoke("reviewer-1")
+
+    with pytest.raises(PolicyAuthorityError, match="cannot be registered"):
+        identities.register("reviewer-1")

@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-082 - Synthetic identity registry remains unprotected
+
+- **Phase:** 82
+- **Status:** Mitigated for local identity lifecycle testing; protected identity remains blocked
+- **Severity:** High
+- **What changed:** Added an injected local identity registry with explicit registration, terminal revocation, and signer/approver validation for synthetic policy releases.
+- **What broke or was discovered:** Phase 81 identity labels were not checked against any identity source; unknown labels could otherwise be presented as authority participants.
+- **Root cause:** The synthetic authority had caller-supplied identity strings but no registry or lifecycle boundary.
+- **Fix applied or proposed:** Require active registry membership during issue and verify, and reject re-registration after revocation.
+- **Why this fix:** It makes the synthetic experiment deterministic and fail closed without promoting local metadata into protected identity.
+- **Remaining risk:** Local registry compromise, missing protected identity, weak key custody, identity collision, stale replicas, and deployment bypass remain possible.
+- **Refactor required:** Yes before production boundary enablement or organizational policy authority.
+- **Related controls:** `docs/research/phase-82-synthetic-identity-lifecycle.md`, TD-081, AUD80-001, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003.
+- **Tests added:** Active identity happy path, unknown signer, revoked approver, and re-registration rejection tests.
+- **Tests still missing:** Protected identity proof, custody, rotation, distributed revocation propagation, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 85 mandatory audit or before any boundary expansion.
+
 ### TD-081 - Synthetic policy authority remains unprotected
 
 - **Phase:** 81

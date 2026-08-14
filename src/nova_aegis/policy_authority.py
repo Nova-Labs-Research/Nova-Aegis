@@ -17,8 +17,34 @@ class PolicyAuthorityKeyProvider(Protocol):
     def active(self) -> tuple[str, bytes] | None: ...
 
 
+class PolicyIdentityRegistry(Protocol):
+    def is_active(self, identity_id: str) -> bool: ...
+
+
 class PolicyAuthorityError(RuntimeError):
     """Raised when a synthetic policy release cannot be trusted."""
+
+
+class LocalSyntheticIdentityRegistry:
+    """Process-local identity registry for synthetic authority experiments."""
+
+    def __init__(self, identities: set[str] | None = None) -> None:
+        self._active: set[str] = set(identities or ())
+        self._revoked: set[str] = set()
+
+    def register(self, identity_id: str) -> None:
+        if not identity_id.strip() or identity_id in self._revoked:
+            raise PolicyAuthorityError("Policy identity cannot be registered")
+        self._active.add(identity_id)
+
+    def revoke(self, identity_id: str) -> None:
+        if not identity_id.strip() or identity_id not in self._active:
+            raise PolicyAuthorityError("Policy identity is not registered")
+        self._active.remove(identity_id)
+        self._revoked.add(identity_id)
+
+    def is_active(self, identity_id: str) -> bool:
+        return identity_id in self._active
 
 
 @dataclass(frozen=True)
@@ -65,8 +91,13 @@ class SignedPolicyRelease:
 class LocalSyntheticPolicyAuthority:
     """Injected local authority used only to test approval separation."""
 
-    def __init__(self, key_provider: PolicyAuthorityKeyProvider) -> None:
+    def __init__(
+        self,
+        key_provider: PolicyAuthorityKeyProvider,
+        identity_registry: PolicyIdentityRegistry,
+    ) -> None:
         self._key_provider = key_provider
+        self._identity_registry = identity_registry
         self._revoked_approvals: set[str] = set()
 
     def issue(
@@ -80,6 +111,7 @@ class LocalSyntheticPolicyAuthority:
             raise PolicyAuthorityError("Policy signer and approver identities are required")
         if signer_id == approval.approver_id:
             raise PolicyAuthorityError("Policy signer and approver must be distinct")
+        self._validate_identities(signer_id, approval.approver_id)
         self._validate_approval(report, approval)
         if approval.production_enabled or report.production_enabled:
             raise PolicyAuthorityError("Policy release cannot enable production")
@@ -114,6 +146,7 @@ class LocalSyntheticPolicyAuthority:
     ) -> None:
         if release.approval_id in self._revoked_approvals:
             raise PolicyAuthorityError("Policy approval is revoked")
+        self._validate_identities(release.signer_id, release.approver_id)
         secret = self._key_provider.get(release.key_id)
         if secret is None:
             raise PolicyAuthorityError("Policy release signing key is not trusted")
@@ -138,6 +171,12 @@ class LocalSyntheticPolicyAuthority:
             raise PolicyAuthorityError("Policy approval does not match preflight report")
         if not approval.approval_id.strip():
             raise PolicyAuthorityError("Policy approval ID is required")
+
+    def _validate_identities(self, signer_id: str, approver_id: str) -> None:
+        if not self._identity_registry.is_active(signer_id):
+            raise PolicyAuthorityError("Policy signer identity is unknown or revoked")
+        if not self._identity_registry.is_active(approver_id):
+            raise PolicyAuthorityError("Policy approver identity is unknown or revoked")
 
 
 def _sign(payload: Mapping[str, Any], secret: bytes) -> str:
