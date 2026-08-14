@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 20](docs/audits/phase-20-audit.md): synthetic work may continue, while networked MCP, Apps/Tasks, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
+The current audit gate is [Phase 25](docs/audits/phase-25-audit.md): synthetic work may continue, while real workers, networked MCP, Apps/Tasks, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
 
 ## Documents
 
@@ -65,6 +65,7 @@ The current audit gate is [Phase 20](docs/audits/phase-20-audit.md): synthetic w
 - [Phase 10 audit](docs/audits/phase-10-audit.md)
 - [Phase 15 audit](docs/audits/phase-15-audit.md)
 - [Phase 20 audit](docs/audits/phase-20-audit.md)
+- [Phase 25 audit](docs/audits/phase-25-audit.md)
 - [Conceptual heritage](references/conceptual_heritage.md)
 - [Canonical flow](architecture/diagrams/canonical-flow.md)
 

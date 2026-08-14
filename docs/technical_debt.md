@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-025 - Phase 25 mandatory audit findings
+
+- **Phase:** 25
+- **Status:** Accepted for synthetic MVP; blocking before real integrations
+- **Severity:** Medium
+- **What changed:** Audited Phases 21-24 task admission, synthetic worker execution, durable local recovery, and scoped reconciliation.
+- **What broke or was discovered:** No Critical or High defect was confirmed. Recovery receipt references and task-worker controls remain local/synthetic, and Foundry Local SDK availability does not constitute provider integration.
+- **Root cause:** The architecture intentionally proves fail-closed local contracts before adding external systems, real workers, or live models.
+- **Fix applied or proposed:** Continue synthetic-only work; require independently verifiable receipts, protected recovery authority, durable worker ownership, actual MCP transport controls, and prior integration prerequisites before scope expansion.
+- **Why this fix:** Passing local task tests do not establish independent external execution evidence or production worker safety.
+- **Remaining risk:** Real recovery could be misrepresented by unverified receipts; local SQLite cannot provide distributed worker coordination; networked MCP and live semantic/model paths remain unimplemented.
+- **Refactor required:** Yes before real integrations; no before synthetic Phase 26.
+- **Related controls:** `docs/audits/phase-25-audit.md`, INV-AUD-001 through INV-AUD-003, INV-HUMAN-001 through INV-HUMAN-003, INV-LOOP-001, INV-MCP-001 through INV-MCP-004.
+- **Tests added:** Mandatory audit probes for cancellation, restart quarantine, scoped reconciliation, and no handler replay; 73-test regression baseline.
+- **Tests still missing:** Independent receipt validation, dual approval, recovery policy/versioning, durable worker queue/leases, distributed task coordination, actual MCP transport/OAuth, live semantic isolation, and protected production stores.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 30 audit or before any real integration.
+
 ### TD-024 - Scoped task recovery reconciliation
 
 - **Phase:** 24
