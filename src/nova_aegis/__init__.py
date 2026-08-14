@@ -115,6 +115,13 @@ from .failure_semantics import (
     SyntheticFailureLedger,
     SyntheticFailureReceipt,
 )
+from .scaling_evaluation import (
+    SyntheticEvaluationCase,
+    SyntheticEvaluationConfig,
+    SyntheticEvaluationReport,
+    SyntheticScalingError,
+    SyntheticScalingEvaluator,
+)
 
 __all__ = [
     "AgentK",
@@ -204,6 +211,11 @@ __all__ = [
     "SyntheticFailureError",
     "SyntheticFailureLedger",
     "SyntheticFailureReceipt",
+    "SyntheticEvaluationCase",
+    "SyntheticEvaluationConfig",
+    "SyntheticEvaluationReport",
+    "SyntheticScalingError",
+    "SyntheticScalingEvaluator",
     "TaskRecord",
     "ExternalExecutionReceipt",
     "ExternalReceiptError",

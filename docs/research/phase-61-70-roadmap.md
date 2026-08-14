@@ -41,9 +41,17 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 91 | Nested synthetic boundary harness | Disposable inner/outer boundary with explicit capability manifest | Implemented synthetically; no real containment claim |
 | 92 | Outcome validity and shortcut resistance | Exact synthetic success signal and alternate-path detection | Implemented synthetically; no capability generalization claim |
 | 93 | Crash and destructive-failure semantics | Explicit failure receipts with no hidden retry or silent repair | Implemented synthetically; no recovery assurance claim |
-| 94 | Persistence, scaling, and false-success evaluation | Bounded attempt/budget matrix and transcript outcome classification | No frontier capability claim |
-| 95 | Mandatory audit | Review Phases 90-94 and all unresolved production blockers | Audit gate |
+| 94 | Persistence, scaling, and false-success evaluation | Bounded attempt/budget matrix and transcript outcome classification | Implemented synthetically; no frontier capability claim |
+| 95 | Mandatory audit | Review Phases 90-94 and all unresolved production blockers | **FREEZE** gate; see Phase 95 audit |
+
+### Frozen Phase 96-100 map
+
+| 96 | Protected synthetic evidence boundary | Authenticated append-only evidence and corruption refusal | Roadmap-only; frozen |
+| 97 | Independent synthetic witness | Distinct witness verification and conflict refusal | Roadmap-only; frozen |
+| 98 | Bounded workload coordination | Explicit local ownership, budgets, and no hidden retry | Roadmap-only; frozen |
+| 99 | Pre-production boundary review | Review-only integration boundary and blocker checklist | Roadmap-only; frozen |
+| 100 | Mandatory audit and freeze review | Review Phases 95-99 and decide whether to reopen scope | Future audit gate |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
-Phase 100 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.
+Phase 100 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review. Phases 96-100 are frozen roadmap work until deliberate human review reopens them.

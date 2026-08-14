@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 90](docs/audits/phase-90-audit.md), with Phases 91-93 continuing synthetic research. The latest full validation reports 161 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, consequential tools, and production recovery remain blocked pending their documented controls.
+The current audit gate is [Phase 95](docs/audits/phase-95-audit.md). Phase 95 freezes further Phase 96-100 implementation pending deliberate human review. The latest full validation reports 165 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
 
 ## Documents
 
@@ -84,10 +84,14 @@ The current audit gate is [Phase 90](docs/audits/phase-90-audit.md), with Phases
 - [Phase 80 audit](docs/audits/phase-80-audit.md)
 - [Phase 85 audit](docs/audits/phase-85-audit.md)
 - [Phase 90 audit](docs/audits/phase-90-audit.md)
+- [Phase 95 audit](docs/audits/phase-95-audit.md)
 - [Phases 86-89 roadmap](docs/research/phase-86-89-roadmap.md)
 - [Phases 91-95 roadmap](docs/research/phase-91-95-roadmap.md)
 - [Phase 91 nested synthetic boundary research](docs/research/phase-91-nested-synthetic-boundary.md)
 - [Phase 92 outcome validity research](docs/research/phase-92-outcome-validity.md)
+- [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
+- [Phase 94 scaling evaluation research](docs/research/phase-94-scaling-evaluation.md)
+- [Phases 96-100 frozen roadmap](docs/research/phase-96-100-roadmap.md)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)

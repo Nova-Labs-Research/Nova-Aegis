@@ -39,6 +39,42 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-095 - Phase 95 retains high production blockers and freezes further work
+
+- **Phase:** 95
+- **Status:** Accepted; roadmap frozen pending human review
+- **Severity:** High
+- **What changed:** Audited Phases 90-94 and confirmed the synthetic boundary, outcome, failure, and scaling controls remain bounded and offline-first.
+- **What broke or was discovered:** Local transcripts, receipts, confidence intervals, and process state do not establish protected custody, independent evidence, real containment, crash-safe durability, or deployment enforcement.
+- **Root cause:** The project remains a process-local synthetic proof with caller-controlled evidence and no protected integration control plane.
+- **Fix applied or proposed:** Retain production hard-disable, record the blockers, and freeze Phase 96-100 implementation until deliberate human review.
+- **Why this fix:** It prevents roadmap momentum or local metadata from being misrepresented as readiness or authority.
+- **Remaining risk:** Local compromise, process loss, fabricated evidence, host escape, distributed disagreement, and consequential integration risk remain unresolved.
+- **Refactor required:** Yes before any real integration, distributed recovery, independent evidence, or consequential action.
+- **Related controls:** `docs/audits/phase-95-audit.md`, `docs/research/phase-96-100-roadmap.md`, TD-090 through TD-094, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Phase 94 added four focused tests; Phase 95 added no implementation.
+- **Tests still missing:** Protected evidence, independent witness authority, coordinated workload safety, deployment enforcement, and all production controls.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 100 audit or earlier boundary/security event.
+
+### TD-094 - Synthetic scaling evaluation is measurement-only
+
+- **Phase:** 94
+- **Status:** Mitigated for deterministic synthetic accounting; capability generalization remains blocked
+- **Severity:** High
+- **What changed:** Added complete fixed-budget/parallelism/seed matrix validation, outcome classification, cost accounting, attempt accounting, and Wilson confidence intervals.
+- **What broke or was discovered:** Repeated-attempt summaries can conflate valid success, false success, disengagement, self-destruction, execution failure, and invalid transcripts without an explicit classification contract.
+- **Root cause:** No deterministic matrix and outcome aggregation contract connected the Phase 92 reviewer and Phase 93 failure receipts.
+- **Fix applied or proposed:** Add `SyntheticScalingEvaluator` and immutable evaluation case/report models.
+- **Why this fix:** It makes bounded synthetic measurements reproducible and prevents incomplete or ambiguous matrices from producing reports.
+- **Remaining risk:** No real parallel workload, process persistence, statistical independence, crash-safe storage, or generalized capability evidence is established.
+- **Refactor required:** Yes before live evaluation, distributed workers, or production reliability claims.
+- **Related controls:** `docs/research/phase-94-scaling-evaluation.md`, TD-091 through TD-093, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Four focused tests for matrix accounting, outcome separation, incomplete matrices, and ambiguous case state.
+- **Tests still missing:** Real workload scheduling, durable reports, independent samples, and protected evidence.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 100 mandatory audit or before any boundary expansion.
+
 ### TD-093 - Synthetic failure receipts are local and non-recovering
 
 - **Phase:** 93
