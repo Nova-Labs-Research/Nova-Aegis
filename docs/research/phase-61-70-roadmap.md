@@ -19,7 +19,11 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 69 | Human review burden and fairness | Synthetic review-load and routing fairness evaluation | Reliability adoption remains deferred |
 | 70 | Mandatory audit | Review Phases 65-69 and all unresolved production blockers | Audit gate |
 | 71 | Independent receipt witness boundary | Separate synthetic issuer and witness identities with digest-bound attestation | No external evidence claim |
+| 72 | Durable witness retention | Append-only local SQLite witness events with replay and revocation | No protected retention claim |
+| 73 | Witness conflict arbitration | Distinct synthetic witness quorum with fail-closed contradiction handling | No independent evidence claim |
+| 74 | Boundary preflight | Deterministic blocker report that never enables production | Governance guard only |
+| 75 | Mandatory audit | Review Phases 70-74 and all unresolved production blockers | Audit gate |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
-Phase 75 remains the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.
+Phase 80 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.

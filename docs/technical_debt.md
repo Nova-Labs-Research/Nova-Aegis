@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-075 - Phase 75 mandatory audit findings
+
+- **Phase:** 75
+- **Status:** Accepted for synthetic-only research; production blockers remain
+- **Severity:** High
+- **What changed:** Audited witness separation, append-only local retention, synthetic quorum arbitration, and deterministic boundary preflight.
+- **What broke or was discovered:** No Critical synthetic defect was found. Local retention, quorum, and preflight improve observability and failure behavior but do not create protected custody, independent evidence, or enforceable production policy.
+- **Root cause:** The system remains intentionally bounded to injected local identities, SQLite, and advisory governance metadata.
+- **Fix applied or proposed:** Continue synthetic-only research; retain blockers for protected identity, durable custody, external evidence, distributed recovery, and policy enforcement.
+- **Why this fix:** It makes the limitations explicit without allowing local controls to become authority.
+- **Remaining risk:** Local compromise, power-loss, failover, external conflict, and deployment-policy bypass remain possible.
+- **Refactor required:** Yes before external evidence, consequential recovery, distributed deployment, or networked MCP.
+- **Related controls:** `docs/audits/phase-75-audit.md`, AUD75-001 through AUD75-004, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003, INV-AUD-001 through INV-AUD-003, INV-MCP-001 through INV-MCP-004.
+- **Tests added:** SQLite witness close/reopen replay/revocation, quorum arbitration, and boundary preflight tests; full 123-test regression passed.
+- **Tests still missing:** Protected custody, power-loss/failover, independent witness deployment, public-key trust, external conflict authority, and enforced production policy.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 80 mandatory audit or before any boundary expansion.
+
 ### TD-071 - Synthetic receipt witness remains non-independent
 
 - **Phase:** 71
