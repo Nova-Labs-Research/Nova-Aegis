@@ -417,7 +417,9 @@ For synthetic worker testing, `submit_task` creates a `pending` state and `run_t
 
 The task store can now be backed by local SQLite. Completed task results remain available after gateway restart. On startup, any persisted `in_progress` task becomes `recovery_required`; Nova Aegis returns `REVIEW` and does not automatically replay the handler. Recovery requires a future authorized reconciliation workflow with an independent execution receipt.
 
-The current synthetic reconciliation contract requires the original authenticated task owner to hold the operator role and an explicit recovery scope. It accepts only `completed` or `abandoned` resolution with a non-empty external receipt reference, stores the reconciliation result, and never invokes the handler as part of resolution. The receipt reference is not independently verified and this is not yet a delegated human-approval workflow.
+The current synthetic reconciliation contract requires the original authenticated task owner to hold the operator role and an explicit recovery scope. It accepts only `completed` or `abandoned` resolution with a non-empty external receipt reference, stores the reconciliation result, and never invokes the handler as part of resolution. Phase 26 adds an injectable external receipt verifier: the local implementation signs receipts and binds them to task identity, tool, owner, gateway audience, canonical parameters, resolution, and result hash.
+
+The receipt registry is still a local proof, not a production external evidence service. It does not yet query a real tool, use public-key signatures, preserve receipt revocation, resolve conflicting receipts, or provide an independently durable receipt ledger.
 
 ## 18. Initial MCP Capability Categories
 

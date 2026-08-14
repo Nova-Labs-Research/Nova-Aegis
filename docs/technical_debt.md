@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-026 - Verifiable external recovery receipts
+
+- **Phase:** 26
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added `ExternalExecutionReceipt`, `ExternalReceiptVerifier`, and `LocalExternalReceiptRegistry`. Recovery reconciliation now requires a signed receipt bound to the task, tool, owner, gateway audience, canonical parameters, resolution, and result hash.
+- **What broke or was discovered:** Phase 24 required a receipt ID but accepted caller-supplied receipt identity and result without independent verification.
+- **Root cause:** Recovery evidence was modeled as metadata, not as a verifiable execution record.
+- **Fix applied or proposed:** Introduce an injectable verifier boundary and fail closed when the verifier is absent, the receipt is unknown/expired/invalid, or task, parameters, result, or resolution do not match.
+- **Why this fix:** Recovery authority must be anchored to evidence with integrity and operation binding, not an unstructured external ID.
+- **Remaining risk:** The verifier is a local synthetic registry, not a real tool receipt service. No public-key trust, receipt persistence, revocation, witness anchoring, external query path, delegated reviewer, dual approval, or conflict handling exists.
+- **Refactor required:** Yes before consequential recovery or real worker deployment; no before synthetic Phase 27 work.
+- **Related controls:** AUD25-001, INV-HUMAN-001 through INV-HUMAN-003, INV-EVID-003, INV-EVID-004, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Unknown receipt, blank receipt, result-hash mismatch, resolution mismatch, signed valid receipt, and no handler replay after reconciliation.
+- **Tests still missing:** Receipt persistence/revocation, public-key verification, conflicting receipts, external receipt query failure, operator approval workflow, receipt tamper forensics, and real tool adapter integration.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 30 audit or before real recovery integration.
+
 ### TD-025 - Phase 25 mandatory audit findings
 
 - **Phase:** 25

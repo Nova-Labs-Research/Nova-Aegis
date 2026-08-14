@@ -42,6 +42,12 @@ from .mcp_gateway import (
     McpTaskState,
     McpToolDescriptor,
 )
+from .receipt_store import (
+    ExternalExecutionReceipt,
+    ExternalReceiptError,
+    ExternalReceiptVerifier,
+    LocalExternalReceiptRegistry,
+)
 from .task_store import InMemoryTaskStore, SQLiteTaskStore, TaskRecord
 
 __all__ = [
@@ -84,4 +90,8 @@ __all__ = [
     "InMemoryTaskStore",
     "SQLiteTaskStore",
     "TaskRecord",
+    "ExternalExecutionReceipt",
+    "ExternalReceiptError",
+    "ExternalReceiptVerifier",
+    "LocalExternalReceiptRegistry",
 ]

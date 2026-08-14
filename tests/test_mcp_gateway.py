@@ -7,6 +7,7 @@ import threading
 
 from nova_aegis import (
     IdentityAuthority,
+    LocalExternalReceiptRegistry,
     McpGateway,
     McpGatewayError,
     McpGatewayRequest,
@@ -27,6 +28,7 @@ def gateway_setup(
     handler_override=None,
     identity_authority=None,
     task_store=None,
+    receipt_verifier=None,
 ):
     identity = identity_authority or IdentityAuthority(secret=b"mcp-gateway-identity-secret")
     policy = ToolPolicy(
@@ -70,6 +72,7 @@ def gateway_setup(
         secret=b"mcp-gateway-token-secret",
         max_active_tasks_per_user=max_active_tasks_per_user,
         task_store=task_store,
+        receipt_verifier=receipt_verifier,
     )
     credential = identity.issue("operator-01", "operator")
     return identity, gateway, audit, credential, executions
@@ -482,9 +485,11 @@ def test_recovery_resolution_requires_scope_receipt_and_never_replays_handler(tm
     first_gateway.close()
 
     second_store = SQLiteTaskStore(database)
+    receipts = LocalExternalReceiptRegistry(secret=b"recovery-receipt-secret")
     _, second_gateway, audit, _, executions = gateway_setup(
         identity_authority=identity,
         task_store=second_store,
+        receipt_verifier=receipts,
     )
     normal_token = issue_tool_token(second_gateway, credential)
     missing_scope = second_gateway.resolve_recovery(
@@ -504,11 +509,41 @@ def test_recovery_resolution_requires_scope_receipt_and_never_replays_handler(tm
         resolution="completed",
         external_receipt_id="",
     )
+    wrong_receipt = second_gateway.resolve_recovery(
+        access_token=recovery_token,
+        task_state=request.task_state,
+        resolution="completed",
+        external_receipt_id="unknown",
+        result={"status": "restart confirmed"},
+    )
+    receipt = receipts.create(
+        task_id=request.task_state.task_id,
+        tool_name="synthetic_status_update",
+        user_id="operator-01",
+        audience=RESOURCE_URI,
+        status="completed",
+        parameters_hash=request.task_state.parameters_hash,
+        result={"status": "restart confirmed"},
+    )
+    wrong_result = second_gateway.resolve_recovery(
+        access_token=recovery_token,
+        task_state=request.task_state,
+        resolution="completed",
+        external_receipt_id=receipt.receipt_id,
+        result={"status": "tampered outcome"},
+    )
+    wrong_resolution = second_gateway.resolve_recovery(
+        access_token=recovery_token,
+        task_state=request.task_state,
+        resolution="abandoned",
+        external_receipt_id=receipt.receipt_id,
+        result={"status": "restart confirmed"},
+    )
     resolved = second_gateway.resolve_recovery(
         access_token=recovery_token,
         task_state=request.task_state,
         resolution="completed",
-        external_receipt_id="external-001",
+        external_receipt_id=receipt.receipt_id,
         result={"status": "restart confirmed"},
     )
     replay = second_gateway.run_task(
@@ -521,9 +556,15 @@ def test_recovery_resolution_requires_scope_receipt_and_never_replays_handler(tm
     assert "recovery scope" in missing_scope["warning"]
     assert missing_receipt["assurance"] == "FAIL"
     assert "receipt reference" in missing_receipt["warning"]
+    assert wrong_receipt["assurance"] == "FAIL"
+    assert "not registered" in wrong_receipt["warning"]
+    assert wrong_result["assurance"] == "FAIL"
+    assert "result does not match" in wrong_result["warning"]
+    assert wrong_resolution["assurance"] == "FAIL"
+    assert "resolution does not match" in wrong_resolution["warning"]
     assert resolved["assurance"] == "PASS"
     assert second_gateway.task_status(request.task_state) == "reconciled_completed"
-    assert resolved["result"]["external_receipt_id"] == "external-001"
+    assert resolved["result"]["external_receipt_id"] == receipt.receipt_id
     assert replay["assurance"] == "PASS"
     assert replay["result"] == resolved["result"]
     assert executions == []

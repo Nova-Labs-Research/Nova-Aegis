@@ -19,6 +19,7 @@ from .core import (
     IdentityError,
     Praetor,
 )
+from .receipt_store import ExternalReceiptError, ExternalReceiptVerifier
 from .task_store import InMemoryTaskStore, TaskRecord, TaskStore
 
 
@@ -85,6 +86,7 @@ class McpGateway:
         lifetime_seconds: int = 300,
         max_active_tasks_per_user: int = 2,
         task_store: TaskStore | None = None,
+        receipt_verifier: ExternalReceiptVerifier | None = None,
     ) -> None:
         if not resource_uri.startswith("https://"):
             raise ValueError("MCP resource URI must use HTTPS")
@@ -104,6 +106,7 @@ class McpGateway:
         self._task_lock = threading.Lock()
         self._inflight_tasks: set[str] = set()
         self._task_store = task_store or InMemoryTaskStore()
+        self._receipt_verifier = receipt_verifier
 
     def create_task_state(
         self,
@@ -227,6 +230,22 @@ class McpGateway:
                 not isinstance(value, str) or not value.strip() for value in result.values()
             ):
                 raise McpGatewayError("MCP task recovery result values must be non-empty strings")
+            verifier_result = dict(result or {})
+            with self._task_lock:
+                record = self._task_store.get(task_state.task_id)
+                if record is None or record.status != "recovery_required":
+                    raise McpGatewayError("MCP task is not awaiting recovery resolution")
+            try:
+                verified = self._verify_receipt(
+                    external_receipt_id,
+                    task_state=task_state,
+                    context=context,
+                    result=verifier_result,
+                )
+            except ExternalReceiptError as error:
+                raise McpGatewayError(f"External execution receipt verification failed: {error}") from error
+            if verified.status != resolution:
+                raise McpGatewayError("External execution receipt resolution does not match")
             with self._task_lock:
                 record = self._task_store.get(task_state.task_id)
                 if record is None or record.status != "recovery_required":
@@ -234,7 +253,8 @@ class McpGateway:
                 reconciled_result = {
                     "resolution": resolution,
                     "external_receipt_id": external_receipt_id,
-                    **dict(result or {}),
+                    "external_receipt_issued_at": str(verified.issued_at),
+                    **verifier_result,
                 }
                 self._task_store.update(
                     task_state.task_id,
@@ -267,6 +287,26 @@ class McpGateway:
             self._expire_tasks()
             record = self._task_store.get(task_state.task_id)
             return record.status if record is not None else "unknown"
+
+    def _verify_receipt(
+        self,
+        receipt_id: str,
+        *,
+        task_state: McpTaskState,
+        context: AuthorizationContext,
+        result: Mapping[str, str],
+    ):
+        if self._receipt_verifier is None:
+            raise McpGatewayError("MCP task recovery requires an external receipt verifier")
+        return self._receipt_verifier.verify(
+            receipt_id,
+            task_id=task_state.task_id,
+            tool_name=task_state.tool_name,
+            user_id=context.user_id,
+            audience=self.resource_uri,
+            parameters_hash=task_state.parameters_hash,
+            result=result,
+        )
 
     def close(self) -> None:
         self._task_store.close()
