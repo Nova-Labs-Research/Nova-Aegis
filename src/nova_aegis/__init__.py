@@ -62,7 +62,11 @@ from .key_provider import JournalKeyProvider, LocalJournalKeyProvider
 from .corpus_manifest import CorpusManifest, ManifestKeyProvider, calculate_corpus_digest
 from .corpus_snapshot import CorpusSnapshot
 from .transport_envelope import SyntheticTransportEnvelope
-from .boundary_preflight import BoundaryPreflightReport, SyntheticBoundaryPreflight
+from .boundary_preflight import (
+    BoundaryGateError,
+    BoundaryPreflightReport,
+    SyntheticBoundaryPreflight,
+)
 from .receipt_witness import (
     LocalReceiptWitness,
     ReceiptWitnessAttestation,
@@ -130,6 +134,7 @@ __all__ = [
     "CorpusSnapshot",
     "SyntheticTransportEnvelope",
     "BoundaryPreflightReport",
+    "BoundaryGateError",
     "SyntheticBoundaryPreflight",
     "LocalReceiptWitness",
     "ReceiptWitnessAttestation",

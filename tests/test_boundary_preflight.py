@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from nova_aegis import SyntheticBoundaryPreflight
+from nova_aegis import BoundaryGateError, SyntheticBoundaryPreflight
 
 
 def test_preflight_reports_refactor_blockers_without_enabling_production() -> None:
@@ -37,3 +37,18 @@ def test_preflight_requires_boundary_and_controls() -> None:
         preflight.assess("", {"offline": True})
     with pytest.raises(ValueError, match="controls"):
         preflight.assess("local-witness", {})
+
+
+def test_preflight_enforcement_rejects_blockers_and_production() -> None:
+    preflight = SyntheticBoundaryPreflight()
+    blocked = preflight.assess("receipt-evidence", {"protected_identity": False})
+    with pytest.raises(BoundaryGateError, match="refactor"):
+        preflight.enforce(blocked)
+
+    ready = preflight.assess("local-witness", {"offline": True})
+    preflight.enforce(ready)
+    with pytest.raises(BoundaryGateError, match="Production"):
+        preflight.enforce(ready, requested_mode="production")
+
+    with pytest.raises(ValueError, match="mode"):
+        preflight.enforce(ready, requested_mode="unknown")

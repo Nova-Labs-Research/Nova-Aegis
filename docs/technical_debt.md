@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-076 - Synthetic boundary gate is not protected policy authority
+
+- **Phase:** 76
+- **Status:** Adapted for local fail-closed enforcement; protected policy remains blocked
+- **Severity:** High
+- **What changed:** Added enforcement for synthetic boundary preflight decisions. Blocked reports and all production requests now raise instead of being silently accepted.
+- **What broke or was discovered:** Local enforcement closes the caller-ignores-preflight path, but a process-local gate cannot enforce policy across deployments or establish protected authority.
+- **Root cause:** The gate uses local metadata and has no protected policy signer, deployment control plane, or independently enforced release boundary.
+- **Fix applied or proposed:** Keep production hard-disabled and require protected policy authority plus deployment integration before any real enablement.
+- **Why this fix:** It strengthens fail-closed behavior without presenting a local governance helper as production authorization.
+- **Remaining risk:** A compromised or bypassed deployment can ignore the local gate; identity, custody, transport, and distributed policy remain unresolved.
+- **Refactor required:** Yes before production boundary enablement.
+- **Related controls:** `docs/research/phase-76-enforceable-boundary-preflight.md`, AUD75-003, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003.
+- **Tests added:** Blocked synthetic enforcement, valid synthetic continuation, production rejection, and invalid-mode tests.
+- **Tests still missing:** Protected policy authority, deployment enforcement, signed release decisions, and distributed policy consistency.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 80 mandatory audit or before any boundary expansion.
+
 ### TD-075 - Phase 75 mandatory audit findings
 
 - **Phase:** 75
