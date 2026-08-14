@@ -67,6 +67,10 @@ from .boundary_preflight import (
     BoundaryPreflightReport,
     SyntheticBoundaryPreflight,
 )
+from .boundary_decision import (
+    BoundaryDecisionError,
+    SignedBoundaryDecision,
+)
 from .receipt_witness import (
     LocalReceiptWitness,
     ReceiptWitnessAttestation,
@@ -135,6 +139,8 @@ __all__ = [
     "SyntheticTransportEnvelope",
     "BoundaryPreflightReport",
     "BoundaryGateError",
+    "BoundaryDecisionError",
+    "SignedBoundaryDecision",
     "SyntheticBoundaryPreflight",
     "LocalReceiptWitness",
     "ReceiptWitnessAttestation",

@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-077 - Signed boundary decisions remain synthetic
+
+- **Phase:** 77
+- **Status:** Adapted for local auditability; protected policy authority remains blocked
+- **Severity:** High
+- **What changed:** Added canonical HMAC-signed boundary decisions bound to exact preflight reports and production-disabled state.
+- **What broke or was discovered:** Signing catches report mutation, unknown keys, and forged production state, but local injected keys do not establish protected policy authority or deployment enforcement.
+- **Root cause:** The experiment has no protected signer, organizational approval chain, deployment control plane, or distributed policy consistency.
+- **Fix applied or proposed:** Keep signed decisions synthetic and fail closed; require protected policy authority before release enforcement or production enablement.
+- **Why this fix:** It improves reviewability without confusing tamper evidence with authorization.
+- **Remaining risk:** A compromised local process can control the key provider or bypass the local verifier.
+- **Refactor required:** Yes before production boundary enablement.
+- **Related controls:** `docs/research/phase-77-signed-boundary-decisions.md`, AUD75-003, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Exact report verification, mutation rejection, unknown-key rejection, production-state rejection, and missing-key tests.
+- **Tests still missing:** Protected policy signer, approval chain, deployment enforcement, and distributed policy consistency.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 80 mandatory audit or before any boundary expansion.
+
 ### TD-076 - Synthetic boundary gate is not protected policy authority
 
 - **Phase:** 76
