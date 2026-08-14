@@ -110,6 +110,11 @@ from .outcome_validity import (
     SyntheticOutcomeReviewer,
     SyntheticTranscriptEvent,
 )
+from .failure_semantics import (
+    SyntheticFailureError,
+    SyntheticFailureLedger,
+    SyntheticFailureReceipt,
+)
 
 __all__ = [
     "AgentK",
@@ -196,6 +201,9 @@ __all__ = [
     "SyntheticOutcomeReview",
     "SyntheticOutcomeReviewer",
     "SyntheticTranscriptEvent",
+    "SyntheticFailureError",
+    "SyntheticFailureLedger",
+    "SyntheticFailureReceipt",
     "TaskRecord",
     "ExternalExecutionReceipt",
     "ExternalReceiptError",

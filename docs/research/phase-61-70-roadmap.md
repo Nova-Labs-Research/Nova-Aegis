@@ -40,7 +40,7 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 90 | Mandatory audit | Review Phases 85-89 and all unresolved production blockers | Audit gate |
 | 91 | Nested synthetic boundary harness | Disposable inner/outer boundary with explicit capability manifest | Implemented synthetically; no real containment claim |
 | 92 | Outcome validity and shortcut resistance | Exact synthetic success signal and alternate-path detection | Implemented synthetically; no capability generalization claim |
-| 93 | Crash and destructive-failure semantics | Explicit failure receipts with no hidden retry or silent repair | No recovery assurance claim |
+| 93 | Crash and destructive-failure semantics | Explicit failure receipts with no hidden retry or silent repair | Implemented synthetically; no recovery assurance claim |
 | 94 | Persistence, scaling, and false-success evaluation | Bounded attempt/budget matrix and transcript outcome classification | No frontier capability claim |
 | 95 | Mandatory audit | Review Phases 90-94 and all unresolved production blockers | Audit gate |
 

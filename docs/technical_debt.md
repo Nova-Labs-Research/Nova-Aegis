@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-093 - Synthetic failure receipts are local and non-recovering
+
+- **Phase:** 93
+- **Status:** Mitigated for synthetic failure accounting; recovery assurance remains blocked
+- **Severity:** High
+- **What changed:** Added a bounded-timeout failure ledger with a fixed failure taxonomy, one terminal receipt per attempt, teardown state, and explicit replay refusal.
+- **What broke or was discovered:** The boundary model could become unavailable after a destructive failure, but no local contract recorded crash, hang, corruption, self-invalidation, or unavailable state without implying repair or retry.
+- **Root cause:** Failure lifecycle and no-replay semantics were not represented as a dedicated synthetic receipt contract.
+- **Fix applied or proposed:** Add `SyntheticFailureLedger` and immutable `SyntheticFailureReceipt` records.
+- **Why this fix:** It makes destructive failures observable and terminal while preserving the offline, synthetic-only boundary.
+- **Remaining risk:** The ledger is process-local and caller-controlled; it does not enforce timeouts for arbitrary code, survive process loss, coordinate recovery, or prove production reliability.
+- **Refactor required:** Yes before consequential recovery, protected persistence, or real execution boundaries.
+- **Related controls:** `docs/research/phase-93-failure-semantics.md`, TD-091, TD-092, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Eight focused tests for the failure taxonomy, timeout bounds, unavailable/invalid state, teardown verification, duplicate terminal receipts, immutable exposure, and replay refusal.
+- **Tests still missing:** Protected durable failure storage, real timeout enforcement, crash-safe append semantics, recovery coordination, and deployment-boundary enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 95 mandatory audit or before any boundary expansion.
+
 ### TD-092 - Synthetic success requires independent boundary evidence
 
 - **Phase:** 92
