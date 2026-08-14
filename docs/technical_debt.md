@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-091 - Synthetic boundary is a contract simulator
+
+- **Phase:** 91
+- **Status:** Mitigated for benign local boundary testing; real containment remains blocked
+- **Severity:** High
+- **What changed:** Added an explicit synthetic boundary manifest, narrow benign capability execution, host/filesystem/network/production denial, and observable teardown.
+- **What broke or was discovered:** The existing preflight decided continuation but did not model the subject boundary or expose a capability inventory and teardown state.
+- **Root cause:** No local evaluation contract existed for the inner synthetic subject boundary.
+- **Fix applied or proposed:** Add `SyntheticNestedBoundary` as a process-local contract simulator with fail-closed manifest validation.
+- **Why this fix:** It enables Phase 92 outcome-validity testing without introducing shell access, real filesystem access, network access, or consequential actions.
+- **Remaining risk:** This is not OS-level isolation and cannot detect container, VM, kernel, host, or deployment escape. Local code can bypass the simulator if treated as enforcement.
+- **Refactor required:** Yes before any real containment or agent execution evaluation.
+- **Related controls:** `docs/research/phase-91-nested-synthetic-boundary.md`, AUD90-001 through AUD90-004, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Five focused tests for capability allowlisting, denied requests, teardown, unavailable state, and unsafe manifests.
+- **Tests still missing:** Real nested isolation, host non-access proof, crash handling, shortcut detection, transcript classification, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 95 mandatory audit or before any boundary expansion.
+
 ### TD-090 - Phase 90 mandatory audit findings
 
 - **Phase:** 90

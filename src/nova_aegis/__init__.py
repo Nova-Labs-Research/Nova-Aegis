@@ -97,6 +97,12 @@ from .reliability_memory import (
     RoutingWorkloadCase,
 )
 from .performance_profile import PipelineProfile, StageTiming, profile_pipeline
+from .synthetic_boundary import (
+    SyntheticBoundaryError,
+    SyntheticBoundaryManifest,
+    SyntheticBoundaryResult,
+    SyntheticNestedBoundary,
+)
 
 __all__ = [
     "AgentK",
@@ -174,6 +180,10 @@ __all__ = [
     "PipelineProfile",
     "StageTiming",
     "profile_pipeline",
+    "SyntheticBoundaryError",
+    "SyntheticBoundaryManifest",
+    "SyntheticBoundaryResult",
+    "SyntheticNestedBoundary",
     "TaskRecord",
     "ExternalExecutionReceipt",
     "ExternalReceiptError",
