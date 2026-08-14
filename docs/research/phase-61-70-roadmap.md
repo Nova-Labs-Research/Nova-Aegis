@@ -32,7 +32,8 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 82 | Synthetic identity lifecycle | Injected identity registration, terminal revocation, and fail-closed authority validation | No protected identity claim |
 | 83 | Durable synthetic identity replay | Append-only SQLite registration/revocation events with restart replay | No protected retention claim |
 | 84 | Synthetic policy key lifecycle | Authority-gated key rotation, successor signing, and retirement refusal | No protected key custody claim |
+| 85 | Mandatory audit | Review Phases 80-84 and all unresolved production blockers | Audit gate |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
-Phase 85 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.
+Phase 90 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.

@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-085 - Phase 85 mandatory audit findings
+
+- **Phase:** 85
+- **Status:** Accepted for synthetic-only research; production blockers remain
+- **Severity:** High
+- **What changed:** Audited Phases 80-84, including synthetic policy authority, identity lifecycle, durable identity replay, and policy-key rotation/retirement.
+- **What broke or was discovered:** No Critical synthetic defect was found. Local identity, SQLite replay, and injected key lifecycle controls improve fail-closed behavior but do not establish protected authority, retention, custody, or deployment enforcement.
+- **Root cause:** The implementation remains bounded to local SQLite events, caller-supplied synthetic lifecycle authority, injected process-local keys, and no protected deployment control plane.
+- **Fix applied or proposed:** Continue synthetic-only research and retain High blockers for protected identity/custody, immutable retention, distributed ordering, authenticated rotation, and deployment enforcement.
+- **Why this fix:** It preserves human authority and prevents local integrity signals from becoming production authorization or independent evidence.
+- **Remaining risk:** Local compromise, filesystem loss or tampering, power-loss, split-brain ordering, stale rotation state, and deployment bypass remain possible.
+- **Refactor required:** Yes before real integrations, consequential recovery, independent evidence, distributed policy, or networked MCP.
+- **Related controls:** `docs/audits/phase-85-audit.md`, AUD85-001 through AUD85-005, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** No implementation tests; audit revalidated the 143-test suite and focused Phase 83-84 controls.
+- **Tests still missing:** Protected identity/custody, immutable retention, crash/failover, distributed ordering, authenticated rotation, rollback prevention, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 90 mandatory audit or before any boundary expansion.
+
 ### TD-084 - Synthetic policy keys remain locally controlled
 
 - **Phase:** 84
