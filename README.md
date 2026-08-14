@@ -83,6 +83,7 @@ The current audit gate is [Phase 85](docs/audits/phase-85-audit.md), with the pr
 - [Phase 75 audit](docs/audits/phase-75-audit.md)
 - [Phase 80 audit](docs/audits/phase-80-audit.md)
 - [Phase 85 audit](docs/audits/phase-85-audit.md)
+- [Phases 86-89 roadmap](docs/research/phase-86-89-roadmap.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)
 - [Phase 83 durable synthetic identity replay research](docs/research/phase-83-durable-synthetic-identity-replay.md)

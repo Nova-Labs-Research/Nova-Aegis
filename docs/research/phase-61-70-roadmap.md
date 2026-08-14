@@ -33,6 +33,10 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 83 | Durable synthetic identity replay | Append-only SQLite registration/revocation events with restart replay | No protected retention claim |
 | 84 | Synthetic policy key lifecycle | Authority-gated key rotation, successor signing, and retirement refusal | No protected key custody claim |
 | 85 | Mandatory audit | Review Phases 80-84 and all unresolved production blockers | Audit gate |
+| 86 | Durable synthetic policy-key lifecycle | Restart-safe append-only key rotation and retirement replay | No protected custody claim |
+| 87 | Synthetic lifecycle integrity | Corruption and contradiction refusal for identity/key events | No immutable-retention claim |
+| 88 | Synthetic two-person rotation ceremony | Bound distinct proposer/approver authorization for key rotation | No organizational approval claim |
+| 89 | Synthetic deployment-boundary enforcement | Context, epoch, key-state, and approval-state consistency checks | No production enablement |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
