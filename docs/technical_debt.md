@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-079 - Decision lifecycle remains locally ordered
+
+- **Phase:** 79
+- **Status:** Adapted for synthetic revocation and supersession testing; protected lifecycle authority remains blocked
+- **Severity:** High
+- **What changed:** Added append-only supersession events, terminal revocation checks, same-boundary successor validation, and current-successor replay.
+- **What broke or was discovered:** Local ordering makes stale decisions and revoked successors fail closed, but it does not establish distributed ordering, protected revocation authority, or organizational policy approval.
+- **Root cause:** The lifecycle is stored in one local SQLite database and depends on injected signing keys.
+- **Fix applied or proposed:** Keep revocation terminal and supersession fail closed; require protected lifecycle authority and distributed consistency before real deployment.
+- **Why this fix:** It prevents ambiguous local replay without treating event order as production governance.
+- **Remaining risk:** Database loss, local compromise, split-brain ordering, and deployment bypass remain possible.
+- **Refactor required:** Yes before production boundary enablement.
+- **Related controls:** `docs/research/phase-79-decision-revocation-supersession.md`, AUD75-001, AUD75-003, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Signed successor replay, stale-report rejection, identical-successor rejection, cross-boundary rejection, and revoked-predecessor rejection.
+- **Tests still missing:** Protected revocation authority, distributed ordering, crash recovery, conflict arbitration, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 80 mandatory audit or before any boundary expansion.
+
 ### TD-078 - Durable signed boundary replay remains local
 
 - **Phase:** 78

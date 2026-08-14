@@ -135,6 +135,26 @@ class SQLiteBoundaryDecisionStore:
         )
         self._connection.commit()
 
+    def supersede(
+        self,
+        previous_boundary: str,
+        successor: SignedBoundaryDecision,
+    ) -> None:
+        current = self._current(previous_boundary)
+        if current is None:
+            raise BoundaryDecisionError("Boundary decision is not registered")
+        if self._is_revoked(previous_boundary):
+            raise BoundaryDecisionError("revoked boundary decision cannot be superseded")
+        if successor.boundary != previous_boundary:
+            raise BoundaryDecisionError("Boundary decision successor does not match boundary")
+        if successor == current:
+            raise BoundaryDecisionError("Boundary decision successor must change content")
+        self._connection.execute(
+            "INSERT INTO boundary_decision_events(boundary, event_type, payload) VALUES (?, ?, ?)",
+            (previous_boundary, "supersede", _decision_payload(successor)),
+        )
+        self._connection.commit()
+
     def replay(
         self,
         boundary: str,
@@ -156,7 +176,7 @@ class SQLiteBoundaryDecisionStore:
         ).fetchall()
         current: SignedBoundaryDecision | None = None
         for event_type, payload in rows:
-            if event_type == "register":
+            if event_type in {"register", "supersede"}:
                 current = _decision_from_payload(payload)
         return current
 

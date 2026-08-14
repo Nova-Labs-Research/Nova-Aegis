@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 75](docs/audits/phase-75-audit.md), with Phases 76-78 continuing synthetic research. The latest full validation reports 131 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
+The current audit gate is [Phase 75](docs/audits/phase-75-audit.md), with Phases 76-79 continuing synthetic research. The latest full validation reports 133 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
 
 ## Documents
 
@@ -65,6 +65,7 @@ The current audit gate is [Phase 75](docs/audits/phase-75-audit.md), with Phases
 - [Phase 76 boundary preflight research](docs/research/phase-76-enforceable-boundary-preflight.md)
 - [Phase 77 signed boundary decision research](docs/research/phase-77-signed-boundary-decisions.md)
 - [Phase 78 durable signed boundary replay research](docs/research/phase-78-durable-signed-boundary-replay.md)
+- [Phase 79 decision revocation and supersession research](docs/research/phase-79-decision-revocation-supersession.md)
 - [Phase 5 audit](docs/audits/phase-05-audit.md)
 - [Phase 10 audit](docs/audits/phase-10-audit.md)
 - [Phase 15 audit](docs/audits/phase-15-audit.md)

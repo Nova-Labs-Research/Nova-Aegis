@@ -84,3 +84,39 @@ def test_decision_store_rejects_unknown_key_and_malformed_event(tmp_path) -> Non
     connection.commit()
     with pytest.raises(BoundaryDecisionError, match="malformed"):
         store.replay("malformed", report, keys)
+
+
+def test_decision_store_replays_signed_successor(tmp_path) -> None:
+    report, decision, keys = _decision()
+    successor_report = BoundaryPreflightReport(
+        "local-witness", "REFACTOR", ("review_required",), False
+    )
+    successor = SignedBoundaryDecision.from_report(successor_report, keys)
+    connection = sqlite3.connect(tmp_path / "boundary-decisions.sqlite3")
+    store = SQLiteBoundaryDecisionStore(connection)
+    store.register(decision)
+    store.supersede("local-witness", successor)
+
+    assert store.replay("local-witness", successor_report, keys) == successor
+    with pytest.raises(BoundaryDecisionError, match="match"):
+        store.replay("local-witness", report, keys)
+
+
+def test_decision_store_rejects_invalid_supersession(tmp_path) -> None:
+    report, decision, keys = _decision()
+    connection = sqlite3.connect(tmp_path / "boundary-decisions.sqlite3")
+    store = SQLiteBoundaryDecisionStore(connection)
+    store.register(decision)
+    successor = SignedBoundaryDecision.from_report(report, keys)
+
+    with pytest.raises(BoundaryDecisionError, match="change"):
+        store.supersede("local-witness", successor)
+
+    other_report = BoundaryPreflightReport("other-boundary", "REFACTOR", (), False)
+    other = SignedBoundaryDecision.from_report(other_report, keys)
+    with pytest.raises(BoundaryDecisionError, match="match"):
+        store.supersede("local-witness", other)
+
+    store.revoke("local-witness")
+    with pytest.raises(BoundaryDecisionError, match="revoked"):
+        store.supersede("local-witness", other)
