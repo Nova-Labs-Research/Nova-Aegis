@@ -12,6 +12,7 @@ from nova_aegis import (
     McpGatewayRequest,
     McpToolDescriptor,
     Praetor,
+    SQLiteTaskStore,
     ToolPolicy,
 )
 
@@ -21,8 +22,13 @@ SCOPE = "mcp:tool:synthetic-status-update"
 READ_SCOPE = "mcp:tool:diagnostic-read"
 
 
-def gateway_setup(max_active_tasks_per_user=2, handler_override=None):
-    identity = IdentityAuthority(secret=b"mcp-gateway-identity-secret")
+def gateway_setup(
+    max_active_tasks_per_user=2,
+    handler_override=None,
+    identity_authority=None,
+    task_store=None,
+):
+    identity = identity_authority or IdentityAuthority(secret=b"mcp-gateway-identity-secret")
     policy = ToolPolicy(
         tool_name="synthetic_status_update",
         allowed_roles=frozenset({"operator"}),
@@ -63,6 +69,7 @@ def gateway_setup(max_active_tasks_per_user=2, handler_override=None):
         },
         secret=b"mcp-gateway-token-secret",
         max_active_tasks_per_user=max_active_tasks_per_user,
+        task_store=task_store,
     )
     credential = identity.issue("operator-01", "operator")
     return identity, gateway, audit, credential, executions
@@ -390,3 +397,72 @@ def test_cancellation_race_cannot_cancel_running_task() -> None:
     assert not worker.is_alive()
     assert result_holder[0]["assurance"] == "PASS"
     assert gateway.task_status(request.task_state) == "completed"
+
+
+def test_completed_task_result_survives_gateway_restart(tmp_path) -> None:
+    database = str(tmp_path / "tasks.db")
+    identity = IdentityAuthority(secret=b"durable-task-identity-secret")
+    first_store = SQLiteTaskStore(database)
+    _, first_gateway, _, credential, first_executions = gateway_setup(
+        identity_authority=identity,
+        task_store=first_store,
+    )
+    token = issue_tool_token(first_gateway, credential)
+    request = stateless_request(first_gateway, token)
+    headers = {"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"}
+
+    first = first_gateway.run_task(access_token=token, headers=headers, request=request)
+    first_gateway.close()
+
+    second_store = SQLiteTaskStore(database)
+    _, second_gateway, _, _, second_executions = gateway_setup(
+        identity_authority=identity,
+        task_store=second_store,
+    )
+    resumed_token = issue_tool_token(second_gateway, credential)
+    replay = second_gateway.run_task(
+        access_token=resumed_token,
+        headers=headers,
+        request=request,
+    )
+
+    assert first["assurance"] == "PASS"
+    assert replay["assurance"] == "PASS"
+    assert replay["result"] == first["result"]
+    assert "already completed" in replay["warning"]
+    assert len(first_executions) == 1
+    assert second_executions == []
+    second_gateway.close()
+
+
+def test_interrupted_durable_task_requires_recovery_after_restart(tmp_path) -> None:
+    database = str(tmp_path / "tasks.db")
+    identity = IdentityAuthority(secret=b"durable-task-identity-secret")
+    first_store = SQLiteTaskStore(database)
+    _, first_gateway, _, credential, _ = gateway_setup(
+        identity_authority=identity,
+        task_store=first_store,
+    )
+    token = issue_tool_token(first_gateway, credential)
+    request = stateless_request(first_gateway, token)
+    first_store.update(request.task_state.task_id, status="in_progress")
+    first_gateway.close()
+
+    second_store = SQLiteTaskStore(database)
+    _, second_gateway, second_audit, _, executions = gateway_setup(
+        identity_authority=identity,
+        task_store=second_store,
+    )
+    resumed_token = issue_tool_token(second_gateway, credential)
+    result = second_gateway.run_task(
+        access_token=resumed_token,
+        headers={"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"},
+        request=request,
+    )
+
+    assert second_gateway.task_status(request.task_state) == "recovery_required"
+    assert result["assurance"] == "REVIEW"
+    assert "recovery is required" in result["warning"]
+    assert executions == []
+    assert second_audit.events[-1]["event_type"] == "mcp_task_recovery_required"
+    second_gateway.close()

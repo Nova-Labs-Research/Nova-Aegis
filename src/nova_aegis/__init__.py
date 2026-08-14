@@ -42,6 +42,7 @@ from .mcp_gateway import (
     McpTaskState,
     McpToolDescriptor,
 )
+from .task_store import InMemoryTaskStore, SQLiteTaskStore, TaskRecord
 
 __all__ = [
     "AgentK",
@@ -80,4 +81,7 @@ __all__ = [
     "McpGatewayRequest",
     "McpTaskState",
     "McpToolDescriptor",
+    "InMemoryTaskStore",
+    "SQLiteTaskStore",
+    "TaskRecord",
 ]

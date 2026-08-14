@@ -415,6 +415,8 @@ The local task contract also enforces a per-user active-task budget and supports
 
 For synthetic worker testing, `submit_task` creates a `pending` state and `run_task` claims it for execution. The local state machine is `pending -> in_progress -> completed | failed`, with `pending -> cancelled | expired` as terminal alternatives. Handler errors become audited `failed` tasks rather than returning them to `pending`; cancellation of an in-progress task is rejected to avoid contradictory state.
 
+The task store can now be backed by local SQLite. Completed task results remain available after gateway restart. On startup, any persisted `in_progress` task becomes `recovery_required`; Nova Aegis returns `REVIEW` and does not automatically replay the handler. Recovery requires a future authorized reconciliation workflow with an independent execution receipt.
+
 ## 18. Initial MCP Capability Categories
 
 Initial workstation experiments may expose a small number of controlled local capabilities.

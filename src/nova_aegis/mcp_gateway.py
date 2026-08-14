@@ -19,6 +19,7 @@ from .core import (
     IdentityError,
     Praetor,
 )
+from .task_store import InMemoryTaskStore, TaskRecord, TaskStore
 
 
 class McpGatewayError(RuntimeError):
@@ -67,13 +68,6 @@ class McpGatewayRequest:
     meta: Mapping[str, Any] | None = None
 
 
-@dataclass
-class _TaskRecord:
-    user_id: str
-    expires_at: int
-    status: str
-
-
 class McpGateway:
     """A synthetic server-side MCP boundary; it is not an OAuth or HTTP implementation."""
 
@@ -88,6 +82,7 @@ class McpGateway:
         secret: bytes | None = None,
         lifetime_seconds: int = 300,
         max_active_tasks_per_user: int = 2,
+        task_store: TaskStore | None = None,
     ) -> None:
         if not resource_uri.startswith("https://"):
             raise ValueError("MCP resource URI must use HTTPS")
@@ -105,9 +100,8 @@ class McpGateway:
         self._max_active_tasks_per_user = max_active_tasks_per_user
         self._issued_tokens: dict[str, IdentityCredential] = {}
         self._task_lock = threading.Lock()
-        self._completed_tasks: dict[str, dict[str, str]] = {}
         self._inflight_tasks: set[str] = set()
-        self._tasks: dict[str, _TaskRecord] = {}
+        self._task_store = task_store or InMemoryTaskStore()
 
     def create_task_state(
         self,
@@ -121,10 +115,7 @@ class McpGateway:
             raise McpGatewayError("MCP tool is not registered")
         with self._task_lock:
             self._expire_tasks()
-            active_count = sum(
-                record.user_id == context.user_id and record.status in {"pending", "in_progress"}
-                for record in self._tasks.values()
-            )
+            active_count = self._task_store.count_active(context.user_id)
             if active_count >= self._max_active_tasks_per_user:
                 raise McpGatewayError("MCP active task quota is exhausted")
         parameters_hash = self._parameters_hash(parameters)
@@ -152,7 +143,7 @@ class McpGateway:
             signature,
         )
         with self._task_lock:
-            self._tasks[task_id] = _TaskRecord(context.user_id, expires_at, "pending")
+            self._task_store.create(TaskRecord(task_id, context.user_id, expires_at, "pending"))
         self._audit_log.append(
             "mcp_task_created",
             task_id=task_id,
@@ -199,10 +190,10 @@ class McpGateway:
         self._validate_task_identity(task_state, context)
         with self._task_lock:
             self._expire_tasks()
-            record = self._tasks.get(task_state.task_id)
+            record = self._task_store.get(task_state.task_id)
             if record is None or record.status != "pending":
                 raise McpGatewayError("MCP task cannot be cancelled in its current state")
-            record.status = "cancelled"
+            self._task_store.update(task_state.task_id, status="cancelled")
         self._audit_log.append(
             "mcp_task_cancelled",
             task_id=task_state.task_id,
@@ -213,8 +204,11 @@ class McpGateway:
     def task_status(self, task_state: McpTaskState) -> str:
         with self._task_lock:
             self._expire_tasks()
-            record = self._tasks.get(task_state.task_id)
+            record = self._task_store.get(task_state.task_id)
             return record.status if record is not None else "unknown"
+
+    def close(self) -> None:
+        self._task_store.close()
 
     def discover_tools(self, credential: IdentityCredential) -> tuple[McpToolDescriptor, ...]:
         context = self._identity_authority.authenticate(credential)
@@ -322,8 +316,8 @@ class McpGateway:
     ) -> dict[str, Any]:
         task_id = request.task_state.task_id
         with self._task_lock:
-            completed = self._completed_tasks.get(task_id)
-            if completed is not None:
+            record = self._task_store.get(task_id)
+            if record is not None and record.status == "completed":
                 self._audit_log.append(
                     "mcp_task_replay_returned",
                     task_id=task_id,
@@ -331,18 +325,30 @@ class McpGateway:
                     user_id=context.user_id,
                 )
                 return {
-                    "result": dict(completed),
+                    "result": dict(record.result or {}),
                     "assurance": AssuranceStatus.PASS.value,
                     "warning": "MCP task already completed; returning the stored result",
                 }
             if task_id in self._inflight_tasks:
                 raise McpGatewayError("MCP task is already in progress")
-            record = self._tasks.get(task_id)
+            record = self._task_store.get(task_id)
             if record is None or record.status == "cancelled":
                 raise McpGatewayError("MCP task is not active")
+            if record.status == "recovery_required":
+                self._audit_log.append(
+                    "mcp_task_recovery_required",
+                    task_id=task_id,
+                    tool=request.name,
+                    user_id=context.user_id,
+                )
+                return {
+                    "result": None,
+                    "assurance": AssuranceStatus.REVIEW.value,
+                    "warning": "MCP task recovery is required before retrying execution",
+                }
             if record.status != "pending":
                 raise McpGatewayError("MCP task is not available for execution")
-            record.status = "in_progress"
+            self._task_store.update(task_id, status="in_progress")
             self._inflight_tasks.add(task_id)
         self._audit_log.append(
             "mcp_task_started",
@@ -359,12 +365,15 @@ class McpGateway:
             )
             if response["assurance"] == AssuranceStatus.PASS.value:
                 with self._task_lock:
-                    self._completed_tasks[task_id] = dict(response["result"])
-                    self._tasks[task_id].status = "completed"
+                    self._task_store.update(
+                        task_id,
+                        status="completed",
+                        result=dict(response["result"]),
+                    )
             return response
         except Exception as error:
             with self._task_lock:
-                self._tasks[task_id].status = "failed"
+                self._task_store.update(task_id, status="failed")
             self._audit_log.append(
                 "mcp_task_failed",
                 task_id=task_id,
@@ -380,9 +389,9 @@ class McpGateway:
         finally:
             with self._task_lock:
                 self._inflight_tasks.discard(task_id)
-                record = self._tasks.get(task_id)
+                record = self._task_store.get(task_id)
                 if record is not None and record.status == "in_progress":
-                    record.status = "pending"
+                    self._task_store.update(task_id, status="pending")
 
     def _blocked(self, tool_name: str, reason: str) -> dict[str, Any]:
         self._audit_log.append("mcp_request_blocked", tool=tool_name, reason=reason)
@@ -484,10 +493,7 @@ class McpGateway:
             raise McpGatewayError("MCP task state signature is invalid")
 
     def _expire_tasks(self) -> None:
-        now = int(time.time())
-        for record in self._tasks.values():
-            if record.status in {"pending", "in_progress"} and record.expires_at <= now:
-                record.status = "expired"
+        self._task_store.expire(int(time.time()))
 
     @staticmethod
     def _validate_meta(meta: Mapping[str, Any] | None) -> None:

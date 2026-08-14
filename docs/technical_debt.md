@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-023 - Durable local task recovery
+
+- **Phase:** 23
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added `SQLiteTaskStore` and injected task-store support into the MCP Gateway. Completed task results now survive gateway restart. A persisted `in_progress` task becomes `recovery_required` on store open and returns `REVIEW` without handler replay.
+- **What broke or was discovered:** Phase 22 task state, replay protection, and terminal results were process-local; restart lost completed task results and could not distinguish interrupted work from a task that had never run.
+- **Root cause:** The gateway lifecycle used in-memory dictionaries rather than durable task records.
+- **Fix applied or proposed:** Persist task ID, owner, expiry, status, result, and update time in local SQLite. Quarantine interrupted work as `recovery_required` rather than retrying it automatically.
+- **Why this fix:** After a crash, execution state is uncertain. Treating uncertainty as permission to replay can duplicate a consequential action.
+- **Remaining risk:** SQLite is local-only and single-node. No worker lease/heartbeat, recovery authorization, independent external receipt, result verification, task payload persistence, durable credential/token state, encryption, access control, concurrency coordination, or distributed queue exists.
+- **Refactor required:** Yes before real workers, real MCP Tasks, or multi-process deployment; no before synthetic Phase 24 work.
+- **Related controls:** High-level architecture Section 17, AUD20-002, INV-AUD-001 through INV-AUD-003, INV-FAIL-002, INV-HUMAN-001, INV-LOOP-001.
+- **Tests added:** Completed result survives restart without handler replay; interrupted `in_progress` task becomes `recovery_required` and requires `REVIEW`.
+- **Tests still missing:** Worker lease expiry, crash injection during handler execution, authorized reconciliation, external receipt validation, database corruption, concurrent gateways, task payload persistence, and distributed queue semantics.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 25 audit or before real worker integration.
+
 ### TD-022 - Synthetic asynchronous task state machine
 
 - **Phase:** 22
