@@ -37,7 +37,7 @@ These names describe research boundaries, not independent products or claims of 
 
 **Status: Synthetic governed-workstation proof**
 
-The executable slice currently demonstrates local retrieval/evidence assurance, Agent K rule traces, semantic/deterministic fusion, synthetic identity and policy checks, tamper-evident local audit, idempotent execution receipts, and a synthetic MCP Gateway.
+The executable slice currently demonstrates local retrieval/evidence assurance and replay, corpus-bound integrity, Agent K rule traces, semantic/deterministic fusion, synthetic identity and policy checks, tamper-evident local audit, idempotent execution receipts, witness separation and local witness replay, deterministic boundary preflight, and a synthetic MCP Gateway.
 
 It does **not** implement a real MCP HTTP/OAuth server, a live semantic evaluator, a verified authoritative corpus, external identity, protected production audit storage, distributed task state, or real consequential tools.
 
@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 25](docs/audits/phase-25-audit.md): synthetic work may continue, while real workers, networked MCP, Apps/Tasks, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
+The current audit gate is [Phase 75](docs/audits/phase-75-audit.md). The latest full validation reports 123 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
 
 ## Documents
 
@@ -61,11 +61,16 @@ The current audit gate is [Phase 25](docs/audits/phase-25-audit.md): synthetic w
 - [Security invariants](docs/security_invariants.md)
 - [Technical debt ledger](docs/technical_debt.md)
 - [Five-phase audit policy](docs/audit_policy.md)
+- [Phases 61-75 roadmap](docs/research/phase-61-70-roadmap.md)
 - [Phase 5 audit](docs/audits/phase-05-audit.md)
 - [Phase 10 audit](docs/audits/phase-10-audit.md)
 - [Phase 15 audit](docs/audits/phase-15-audit.md)
 - [Phase 20 audit](docs/audits/phase-20-audit.md)
 - [Phase 25 audit](docs/audits/phase-25-audit.md)
+- [Phase 60 audit](docs/audits/phase-60-audit.md)
+- [Phase 65 audit](docs/audits/phase-65-audit.md)
+- [Phase 70 audit](docs/audits/phase-70-audit.md)
+- [Phase 75 audit](docs/audits/phase-75-audit.md)
 - [Conceptual heritage](references/conceptual_heritage.md)
 - [Canonical flow](architecture/diagrams/canonical-flow.md)
 
