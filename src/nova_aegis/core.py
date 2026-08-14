@@ -92,6 +92,44 @@ class RetrievalTrace:
     ranked_source_ids: tuple[str, ...]
     ranked_scores: tuple[tuple[str, int], ...]
     selected_source_ids: tuple[str, ...]
+    corpus_digest: str = ""
+    trace_digest: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def canonical_payload(self) -> dict[str, Any]:
+        payload = self.to_dict()
+        payload.pop("trace_digest", None)
+        return payload
+
+    def calculate_digest(self) -> str:
+        serialized = json.dumps(
+            self.canonical_payload(), sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        return hashlib.sha256(serialized).hexdigest()
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> RetrievalTrace:
+        try:
+            return cls(
+                question=str(value["question"]),
+                authority_scope=tuple(value["authority_scope"]),
+                hierarchy_scope=tuple(value["hierarchy_scope"]),
+                candidate_source_ids=tuple(value["candidate_source_ids"]),
+                authority_filtered_source_ids=tuple(value["authority_filtered_source_ids"]),
+                hierarchy_filtered_source_ids=tuple(value["hierarchy_filtered_source_ids"]),
+                ranked_source_ids=tuple(value["ranked_source_ids"]),
+                ranked_scores=tuple(
+                    (str(source_id), int(score))
+                    for source_id, score in value["ranked_scores"]
+                ),
+                selected_source_ids=tuple(value["selected_source_ids"]),
+                corpus_digest=str(value.get("corpus_digest", "")),
+                trace_digest=str(value.get("trace_digest", "")),
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("Retrieval trace has an invalid serialized shape") from error
 
 
 @dataclass(frozen=True)
@@ -420,7 +458,6 @@ class AuditLog:
     def events(self) -> tuple[dict[str, Any], ...]:
         return tuple(self._events)
 
-
 class SQLiteAuditLog:
     """Local durable audit log with a tamper-evident hash chain."""
 
@@ -616,6 +653,18 @@ class SQLiteAuditLog:
             for event_id, timestamp, event_type, details_json, event_hash in rows
         )
 
+    def retrieval_traces(self) -> tuple[Mapping[str, Any], ...]:
+        self.verify_integrity()
+        traces: list[Mapping[str, Any]] = []
+        for event in self.events:
+            if event["event_type"] != "retrieval_completed":
+                continue
+            trace = event.get("retrieval_trace")
+            if not isinstance(trace, Mapping):
+                raise AuditIntegrityError("Retrieval audit event has no valid trace")
+            traces.append(trace)
+        return tuple(traces)
+
     def verify_integrity(self) -> None:
         rows = self._connection.execute(
             """
@@ -687,6 +736,15 @@ class LocalRetriever:
     def __init__(self, documents: Iterable[Evidence]) -> None:
         self._documents = tuple(documents)
 
+    @property
+    def corpus_digest(self) -> str:
+        serialized = json.dumps(
+            [asdict(document) for document in sorted(self._documents, key=lambda item: item.source_id)],
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(serialized).hexdigest()
+
     def retrieve(self, question: str, limit: int = 3) -> tuple[Citation, ...]:
         citations, _ = self.retrieve_with_trace(question, limit=limit)
         return citations
@@ -757,8 +815,32 @@ class LocalRetriever:
             ranked_source_ids=tuple(document.source_id for _, document in ranked),
             ranked_scores=tuple((document.source_id, score) for score, document in ranked),
             selected_source_ids=tuple(citation.source_id for citation in citations),
+            corpus_digest=self.corpus_digest,
+        )
+        trace = RetrievalTrace(
+            **{**trace.to_dict(), "trace_digest": trace.calculate_digest()}
         )
         return citations, trace
+
+    def replay_trace(self, trace: RetrievalTrace | Mapping[str, Any]) -> tuple[Citation, ...]:
+        expected = (
+            RetrievalTrace.from_dict(trace) if isinstance(trace, Mapping) else trace
+        )
+        if not isinstance(expected, RetrievalTrace):
+            raise ValueError("Retrieval trace must be a RetrievalTrace or mapping")
+        if expected.corpus_digest != self.corpus_digest:
+            raise AuditIntegrityError("Retrieval trace replay corpus identity does not match")
+        if not expected.trace_digest or expected.trace_digest != expected.calculate_digest():
+            raise AuditIntegrityError("Retrieval trace replay digest is invalid")
+        citations, actual = self.retrieve_with_trace(
+            expected.question,
+            limit=max(1, len(expected.selected_source_ids)),
+            authorities=expected.authority_scope,
+            hierarchy_prefix=expected.hierarchy_scope,
+        )
+        if actual != expected:
+            raise AuditIntegrityError("Retrieval trace replay does not match persisted trace")
+        return citations
 
     @staticmethod
     def _terms(text: str) -> set[str]:

@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 
 from nova_aegis import (
+    AuditIntegrityError,
     Evidence,
     GovernanceUnavailable,
     LocalRetriever,
     LocalReliabilityMemory,
     NovaAegisMVP,
     Praetor,
+    RetrievalTrace,
+    SQLiteAuditLog,
     ToolPolicy,
     ReliabilityRecord,
     RoutingWorkloadCase,
@@ -106,6 +111,111 @@ def test_retrieval_scopes_authority_and_hierarchy_before_ranking() -> None:
     assert trace.selected_source_ids == ("IN-SCOPE",)
 
 
+def test_retrieval_trace_replays_from_durable_audit_record(tmp_path) -> None:
+    retriever = LocalRetriever(
+        [
+            Evidence(
+                source_id="PROC-001",
+                title="Restart Procedure",
+                text="Restarting Service A requires operator approval.",
+                authority="operations-policy",
+                hierarchy=("corp", "ops"),
+                provenance_verified=True,
+            )
+        ]
+    )
+    _, trace = retriever.retrieve_with_trace(
+        "What approval does restarting Service A require?",
+        authorities=("operations-policy",),
+        hierarchy_prefix=("corp", "ops"),
+    )
+    database = str(tmp_path / "retrieval-audit.db")
+    audit = SQLiteAuditLog(database)
+    audit.append("retrieval_completed", retrieval_trace=trace.to_dict())
+    audit.close()
+
+    reopened = SQLiteAuditLog(database)
+    persisted_trace = reopened.retrieval_traces()[0]
+    citations = retriever.replay_trace(persisted_trace)
+
+    assert [citation.source_id for citation in citations] == ["PROC-001"]
+    reopened.verify_integrity()
+    reopened.close()
+
+
+def test_retrieval_trace_tampering_and_corpus_change_fail_closed() -> None:
+    retriever = LocalRetriever(
+        [Evidence(source_id="DOC-001", title="Restart guide", text="Restart requires approval.")]
+    )
+    _, trace = retriever.retrieve_with_trace("What approval does restart require?")
+    tampered = trace.to_dict()
+    tampered["selected_source_ids"] = ("FORGED-001",)
+
+    with pytest.raises(AuditIntegrityError, match="replay"):
+        retriever.replay_trace(tampered)
+
+    tampered_digest = trace.to_dict()
+    tampered_digest["trace_digest"] = "0" * 64
+    with pytest.raises(AuditIntegrityError, match="digest"):
+        retriever.replay_trace(tampered_digest)
+
+    changed_retriever = LocalRetriever(
+        [Evidence(source_id="DOC-001", title="Restart guide", text="Restart requires approval. Updated.")]
+    )
+    with pytest.raises(AuditIntegrityError, match="replay"):
+        changed_retriever.replay_trace(trace)
+
+
+def test_retrieval_trace_replay_rejects_changed_scope() -> None:
+    retriever = LocalRetriever(
+        [
+            Evidence(
+                source_id="DOC-001",
+                title="Restart guide",
+                text="Restart requires approval.",
+                authority="operations-policy",
+                hierarchy=("corp", "ops"),
+            )
+        ]
+    )
+    _, trace = retriever.retrieve_with_trace(
+        "What approval does restart require?",
+        authorities=("operations-policy",),
+        hierarchy_prefix=("corp", "ops"),
+    )
+    changed_scope = trace.to_dict()
+    changed_scope["authority_scope"] = ("untrusted-note",)
+    changed_scope["trace_digest"] = RetrievalTrace.from_dict(changed_scope).calculate_digest()
+
+    with pytest.raises(AuditIntegrityError, match="replay"):
+        retriever.replay_trace(changed_scope)
+
+
+def test_retrieval_trace_replays_concurrently_from_independent_sqlite_connections(tmp_path) -> None:
+    retriever = LocalRetriever(
+        [Evidence(source_id="DOC-001", title="Restart guide", text="Restart requires approval.")]
+    )
+    _, trace = retriever.retrieve_with_trace("What approval does restart require?")
+    database = str(tmp_path / "concurrent-retrieval.db")
+    writer = SQLiteAuditLog(database)
+    writer.append("retrieval_completed", retrieval_trace=trace.to_dict())
+    writer.close()
+
+    def replay_from_reopened_connection() -> str:
+        audit = SQLiteAuditLog(database)
+        try:
+            persisted = audit.retrieval_traces()
+            citations = retriever.replay_trace(persisted[0])
+            return citations[0].source_id
+        finally:
+            audit.close()
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = tuple(executor.map(lambda _: replay_from_reopened_connection(), range(8)))
+
+    assert results == ("DOC-001",) * 8
+
+
 def test_reliability_memory_isolated_from_factual_assurance(documents: list[Evidence]) -> None:
     reliability = LocalReliabilityMemory()
     reliability.record(ReliabilityRecord("agent-1", "restart-policy", "failure", 1))
@@ -176,6 +286,67 @@ def test_reliability_memory_rejects_poisoned_outcomes() -> None:
 
     with pytest.raises(ValueError, match="success or failure"):
         reliability.record(ReliabilityRecord("agent-a", "review", "trusted", 1))
+
+
+def test_reliability_provenance_gate_rejects_unverified_history() -> None:
+    reliability = LocalReliabilityMemory(
+        [
+            ReliabilityRecord("agent-a", "review", "failure", 99),
+            ReliabilityRecord("agent-a", "review", "failure", 100),
+            ReliabilityRecord(
+                "agent-b",
+                "review",
+                "success",
+                99,
+                source="synthetic-witness",
+                provenance_verified=True,
+                observation_id="obs-b-1",
+            ),
+            ReliabilityRecord(
+                "agent-b",
+                "review",
+                "success",
+                100,
+                source="synthetic-witness",
+                provenance_verified=True,
+                observation_id="obs-b-2",
+            ),
+        ]
+    )
+
+    decision = reliability.route(
+        ("agent-a", "agent-b"),
+        "review",
+        now=100,
+        max_age=5,
+        require_provenance=True,
+    )
+
+    assert decision.selected_subject == "agent-b"
+    assert decision.used_reliability
+    assert decision.provenance_rejected_subjects == ("agent-a",)
+
+    reliability.record(
+        ReliabilityRecord(
+            "agent-b",
+            "review",
+            "failure",
+            100,
+            source="forged-caller",
+        )
+    )
+    blocked = reliability.route(
+        ("agent-a", "agent-b"),
+        "review",
+        now=100,
+        max_age=5,
+        require_provenance=True,
+    )
+
+    assert blocked.selected_subject == "agent-a"
+    assert not blocked.used_reliability
+    assert blocked.provenance_rejected_subjects == ("agent-a", "agent-b")
+    assert "provenance" in blocked.reason
 
 
 def test_reliability_replay_compares_fixed_workload_to_baseline() -> None:

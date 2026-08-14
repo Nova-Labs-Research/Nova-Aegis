@@ -12,6 +12,9 @@ class ReliabilityRecord:
     task_class: str
     outcome: str
     observed_at: int
+    source: str = "caller-supplied"
+    provenance_verified: bool = False
+    observation_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -23,6 +26,7 @@ class RoutingDecision:
     success_rates: tuple[tuple[str, float], ...]
     candidate_subjects: tuple[str, ...] = ()
     eligible_subjects: tuple[str, ...] = ()
+    provenance_rejected_subjects: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -68,6 +72,10 @@ class LocalReliabilityMemory:
             raise ValueError("Reliability outcome must be success or failure")
         if entry.observed_at < 0:
             raise ValueError("Reliability observation time cannot be negative")
+        if not entry.source.strip():
+            raise ValueError("Reliability records require a source")
+        if entry.provenance_verified and not entry.observation_id.strip():
+            raise ValueError("Verified reliability records require an observation ID")
         self._records.append(entry)
 
     def history(self, subject_id: str, task_class: str) -> tuple[ReliabilityRecord, ...]:
@@ -92,6 +100,7 @@ class LocalReliabilityMemory:
         now: int,
         max_age: int,
         minimum_observations: int = 2,
+        require_provenance: bool = False,
     ) -> RoutingDecision:
         candidates = tuple(dict.fromkeys(subjects))
         if not candidates:
@@ -100,24 +109,37 @@ class LocalReliabilityMemory:
             raise ValueError("Invalid routing experiment parameters")
         baseline = candidates[0]
         rates: list[tuple[str, float]] = []
+        provenance_rejected: list[str] = []
         for subject in candidates:
             entries = self.history(subject, task_class)
             if len(entries) < minimum_observations:
                 continue
             if any(now - entry.observed_at > max_age for entry in entries):
                 continue
+            if require_provenance and any(
+                not entry.provenance_verified or not entry.observation_id.strip()
+                for entry in entries
+            ):
+                provenance_rejected.append(subject)
+                continue
             successes = sum(entry.outcome.casefold() == "success" for entry in entries)
             rates.append((subject, successes / len(entries)))
         eligible_subjects = tuple(subject for subject, _ in rates)
         if not rates:
+            reason = (
+                "Reliability provenance is missing or unverified; baseline routing retained"
+                if provenance_rejected
+                else "Reliability history is missing or stale; baseline routing retained"
+            )
             return RoutingDecision(
                 selected_subject=baseline,
                 baseline_subject=baseline,
                 used_reliability=False,
-                reason="Reliability history is missing or stale; baseline routing retained",
+                reason=reason,
                 success_rates=(),
                 candidate_subjects=candidates,
                 eligible_subjects=eligible_subjects,
+                provenance_rejected_subjects=tuple(provenance_rejected),
             )
         best_rate = max(rate for _, rate in rates)
         best = tuple(subject for subject, rate in rates if rate == best_rate)
@@ -130,6 +152,7 @@ class LocalReliabilityMemory:
                 success_rates=tuple(rates),
                 candidate_subjects=candidates,
                 eligible_subjects=eligible_subjects,
+                provenance_rejected_subjects=tuple(provenance_rejected),
             )
         return RoutingDecision(
             selected_subject=best[0],
@@ -139,10 +162,15 @@ class LocalReliabilityMemory:
             success_rates=tuple(rates),
             candidate_subjects=candidates,
             eligible_subjects=eligible_subjects,
+            provenance_rejected_subjects=tuple(provenance_rejected),
         )
 
     def replay(
-        self, workload: Iterable[RoutingWorkloadCase], *, minimum_observations: int = 2
+        self,
+        workload: Iterable[RoutingWorkloadCase],
+        *,
+        minimum_observations: int = 2,
+        require_provenance: bool = False,
     ) -> RoutingExperimentResult:
         cases = tuple(workload)
         if not cases:
@@ -156,6 +184,7 @@ class LocalReliabilityMemory:
                 now=case.now,
                 max_age=case.max_age,
                 minimum_observations=minimum_observations,
+                require_provenance=require_provenance,
             )
             for case in cases
         )

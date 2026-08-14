@@ -39,6 +39,168 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-060 - Phase 60 mandatory audit findings
+
+- **Phase:** 60
+- **Status:** Accepted for synthetic-only research; production blockers remain
+- **Severity:** High
+- **What changed:** Audited Phases 55-59, including corpus manifests, local concurrent replay, reliability provenance gating, and receipt conflict/revocation controls.
+- **What broke or was discovered:** No Critical synthetic defect was found. Local integrity controls detect defined perturbations, but manifests, provenance claims, receipt state, SQLite coordination, and transport remain non-independent and synthetic.
+- **Root cause:** The architecture proves bounded failure behavior before protected organizational authority, independent evidence, distributed coordination, or real transport are introduced.
+- **Fix applied or proposed:** Continue only synthetic, hypothesis-driven research; retain High blockers for protected authority, distributed state, external evidence, and reliability adoption; retain Medium prerequisites for trusted retrieval, performance, and transport.
+- **Why this fix:** It preserves human authority and fail-closed behavior while preventing local control evidence from becoming an unsafe production claim.
+- **Remaining risk:** Treating local HMAC keys, manifests, observation provenance, receipts, SQLite state, or routing history as trusted could produce forged evidence, inconsistent recovery, unsafe routing, or unauthorized transport behavior.
+- **Refactor required:** Yes before trusted corpus deployment, consequential recovery, reliability-driven routing, distributed deployment, or networked MCP.
+- **Related controls:** `docs/audits/phase-60-audit.md`, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003, INV-AUD-001 through INV-AUD-003, INV-MCP-001 through INV-MCP-004, AUD60-001 through AUD60-007, TD-056 through TD-059.
+- **Tests added:** Phase 56-59 focused failure and concurrency tests; full 109-test regression and focused audit validation.
+- **Tests still missing:** Protected authority, distributed failover, independent receipt witnessing, authenticated scopes, historical restoration, reliability attestation/calibration/fairness, runtime prefill evidence, and networked transport.
+- **Owner:** Nova Aegis
+- **Review date:** Before any boundary expansion or the Phase 65 mandatory audit.
+
+### TD-059 - Receipt and transport authority remains synthetic
+
+- **Phase:** 59
+- **Status:** Adapted for local conflict/revocation testing; independent witnessing remains open
+- **Severity:** High
+- **What changed:** Synthetic receipts now support explicit registration, duplicate-ID conflict rejection, and revocation while preserving task, tool, user, audience, parameter, result, signature, and expiry checks.
+- **What broke or was discovered:** Local signature verification and gateway binding do not establish that an external system actually performed an action or that the receipt authority is independent.
+- **Root cause:** Receipt keys and registry state remain process-local synthetic components, and MCP remains in-process rather than networked.
+- **Fix applied or proposed:** Retain fail-closed receipt conflict/revocation checks and defer external authority, public-key trust, retention, and real transport until separately researched and audited.
+- **Why this fix:** It closes identifiable local ambiguity without presenting synthetic receipts as external evidence.
+- **Remaining risk:** Local compromise, forged registry state, revocation races, missing retention, conflicting external systems, and network transport threats remain.
+- **Refactor required:** Yes before consequential recovery, independent external evidence, or networked MCP.
+- **Related controls:** INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003, INV-MCP-001 through INV-MCP-004, AUD55-003, AUD55-007.
+- **Tests added:** Audience/parameter binding, revocation, duplicate-ID conflict, and focused gateway receipt recovery tests.
+- **Tests still missing:** Independent witness, public-key trust, retention, revocation distribution, conflict arbitration, HTTP/OAuth/PKCE, SSRF, quotas, sessions, Apps, and Tasks.
+- **Owner:** Nova Aegis
+- **Review date:** Before networked MCP or the Phase 60 mandatory audit.
+
+### TD-058 - Reliability provenance is caller-supplied
+
+- **Phase:** 58
+- **Status:** Adapted for synthetic poisoning detection; trusted reliability remains deferred
+- **Severity:** High
+- **What changed:** Reliability records now carry source, verification, and observation ID metadata; an opt-in provenance gate rejects unverified history and records rejected subjects.
+- **What broke or was discovered:** A forged observation can poison an otherwise valid subject unless the entire subject history is provenance-gated.
+- **Root cause:** Reliability history remains append-only caller-supplied operational metadata without an independent witness.
+- **Fix applied or proposed:** Require every observation for a reliability-supported route to be verified and identified; otherwise retain baseline routing.
+- **Why this fix:** Partial trust must not silently elevate a route or hide poisoning in an aggregate success rate.
+- **Remaining risk:** Provenance claims can still be fabricated at the synthetic boundary; calibration, fairness, representative utility, review burden, and independent witnessing remain open.
+- **Refactor required:** Yes before reliability-driven routing in production or consequential workflows.
+- **Related controls:** INV-FAIL-002, INV-AUD-001 through INV-AUD-003, AUD55-004, TD-051.
+- **Tests added:** Verified routing, unverified subject rejection, forged-observation poisoning fallback, and provenance decision metadata.
+- **Tests still missing:** Protected witness, attestation, calibration, fairness, representative workload, and review-burden measurement.
+- **Owner:** Nova Aegis
+- **Review date:** Before reliability adoption or the Phase 60 mandatory audit.
+
+### TD-057 - Retrieval replay reproducibility remains local
+
+- **Phase:** 57
+- **Status:** Adapted for independent local-connection testing; distributed durability remains open
+- **Severity:** Medium
+- **What changed:** Eight concurrent independent SQLite connections reopened, verified, and replayed the same durable retrieval trace.
+- **What broke or was discovered:** Local close/reopen consistency can be tested, but this does not establish multi-host coordination, crash recovery, or immutable replication.
+- **Root cause:** The audit and trace stores are intentionally bounded to local SQLite.
+- **Fix applied or proposed:** Keep concurrent-reader replay as a reproducible local experiment and retain distributed deployment as a refactor gate.
+- **Why this fix:** It tests the nearest meaningful boundary without overstating local consistency as distributed durability.
+- **Remaining risk:** Crash injection, corruption recovery, failover, split-brain, power-loss, and protected replication remain untested.
+- **Refactor required:** Yes before distributed audit, workers, or production retrieval.
+- **Related controls:** INV-FAIL-002, INV-AUD-001 through INV-AUD-003, TD-054, AUD55-002, AUD55-005.
+- **Tests added:** Eight concurrent independent-connection retrieval replays.
+- **Tests still missing:** Crash, corruption, failover, multi-host, and immutable-anchor tests.
+- **Owner:** Nova Aegis
+- **Review date:** Before distributed deployment or the Phase 60 mandatory audit.
+
+### TD-056 - Corpus manifest authority remains synthetic
+
+- **Phase:** 56
+- **Status:** Adapted for local integrity and version experiments; protected custody remains open
+- **Severity:** High
+- **What changed:** Added canonical, versioned HMAC corpus manifests bound to source IDs and complete corpus digests, with rollback and unknown-key rejection.
+- **What broke or was discovered:** A local digest and valid HMAC can detect drift but cannot establish that the signer, corpus, authority, or revision is organizationally trusted.
+- **Root cause:** The experiment uses the existing process-local injected key-provider boundary.
+- **Fix applied or proposed:** Keep manifest verification fail-closed and synthetic; require protected key custody, rotation, revocation, retention, and independent anchoring before trusted corpus deployment.
+- **Why this fix:** It creates an auditable integrity contract without promoting test keys into production authority.
+- **Remaining risk:** Forged local key providers, unanchored manifests, invalid evidence, stale revisions, and multi-node distribution remain possible.
+- **Refactor required:** Yes before trusted external evidence or protected corpus custody.
+- **Related controls:** INV-FAIL-002, INV-AUD-001 through INV-AUD-003, TD-053, AUD55-001, AUD55-005.
+- **Tests added:** Canonical signing, round-trip verification, tampering, rollback, unknown-key, and corpus-drift rejection.
+- **Tests still missing:** Protected signer, key rotation/revocation, immutable anchoring, historical snapshots, and distributed manifest consistency.
+- **Owner:** Nova Aegis
+- **Review date:** Before trusted retrieval or the Phase 60 mandatory audit.
+
+### TD-055 - Phase 55 mandatory audit findings
+
+- **Phase:** 55
+- **Status:** Accepted for synthetic-only research; production blockers remain
+- **Severity:** High
+- **What changed:** Audited Phases 50-54, including reliability false-route evaluation, durable retrieval replay, corpus-bound trace digests, and verified SQLite trace access.
+- **What broke or was discovered:** No Critical synthetic defect was found. Local digests detect corpus drift but do not establish protected corpus authority; fabricated reliability history can still cause false route changes; identity, independent receipts, distributed coordination, and networked MCP remain synthetic.
+- **Root cause:** Local experiments prove bounded control behavior, not protected organizational authority, independent witnessing, or multi-host semantics.
+- **Fix applied or proposed:** Continue synthetic-only work through focused experiments for protected corpus manifests, cross-process replay, reliability provenance/poisoning, and independent receipt/transport prerequisites.
+- **Why this fix:** It extends evidence and failure coverage without allowing local metadata or research metrics to become production authority.
+- **Remaining risk:** Treating local keys, digests, SQLite state, receipts, scopes, or reliability history as trusted could produce forged evidence, inconsistent recovery, unsafe routing, or unauthorized transport behavior.
+- **Refactor required:** Yes before real integrations, consequential recovery, reliability-driven routing, trusted retrieval, distributed deployment, or networked MCP.
+- **Related controls:** `docs/audits/phase-55-audit.md`, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003, INV-AUD-001 through INV-AUD-003, AUD55-001 through AUD55-007, TD-051 through TD-054.
+- **Tests added:** Phase 53-54 retrieval integrity and verified-access tests; full 103-test regression and focused retrieval/reliability audit validation.
+- **Tests still missing:** Protected authority, distributed failover, independent receipt witnessing, reliability provenance/poisoning, authenticated retrieval scopes, historical source restoration, and networked transport.
+- **Owner:** Nova Aegis
+- **Review date:** Before any boundary expansion or the Phase 60 mandatory audit.
+
+### TD-054 - Verified replay access remains local
+
+- **Phase:** 54
+- **Status:** Adapted for reviewer-facing local replay; deployment trust remains open
+- **Severity:** Medium
+- **What changed:** SQLite audit logs now expose retrieval traces only after hash-chain verification; reopen and scope-mismatch replay tests were added.
+- **What broke or was discovered:** Durable trace access was implicit through generic event enumeration and had no dedicated verified retrieval boundary.
+- **Root cause:** Retrieval traces were stored as ordinary audit details without a purpose-specific accessor.
+- **Fix applied or proposed:** Add `SQLiteAuditLog.retrieval_traces()` and keep retrieval replay computation-only.
+- **Why this fix:** Reviewers can obtain the intended trace records after integrity verification without conflating retrieval replay with external action replay.
+- **Remaining risk:** SQLite is process-local, the hash root is not independently anchored, and caller-supplied scopes are unauthenticated.
+- **Refactor required:** Yes before distributed audit or trusted external retrieval deployment.
+- **Related controls:** INV-FAIL-002, INV-AUD-001 through INV-AUD-003, TD-052, AUD50-005.
+- **Tests added:** SQLite close/reopen access, verified trace extraction, and scope-alteration rejection.
+- **Tests still missing:** Distributed failover, immutable anchoring, authenticated scopes, and historical corpus restoration.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 55 mandatory audit or before distributed/trusted retrieval.
+
+### TD-053 - Retrieval replay requires corpus identity binding
+
+- **Phase:** 53
+- **Status:** Adapted for local drift detection; independent corpus authority remains open
+- **Severity:** Medium
+- **What changed:** Retrieval traces now include canonical corpus and trace SHA-256 digests; replay rejects missing, invalid, or mismatched digests.
+- **What broke or was discovered:** Same-ID source content changes could evade a trace comparison when ranking structure remained unchanged.
+- **Root cause:** Phase 52 replay compared decision structure but did not bind the decision to the complete evidence corpus.
+- **Fix applied or proposed:** Fingerprint the sorted `Evidence` corpus and canonical trace payload before replay.
+- **Why this fix:** Replay detects corpus drift before accepting a durable selection, while remaining deterministic and dependency-free.
+- **Remaining risk:** Local digests are not protected anchors, source truth is not established, and hierarchy/authority metadata remain caller-supplied.
+- **Refactor required:** Yes before trusted external evidence or protected corpus custody.
+- **Related controls:** INV-FAIL-002, INV-AUD-001 through INV-AUD-003, TD-052, TD-043.
+- **Tests added:** Same-ID corpus mutation and trace-digest tampering rejection.
+- **Tests still missing:** Signed corpus manifests, historical source snapshots, key rotation, and cross-node reproducibility.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 55 mandatory audit or before trusted external retrieval.
+
+### TD-052 - Durable retrieval replay remains local
+
+- **Phase:** 52
+- **Status:** Adapted for local auditability; independent trust remains open
+- **Severity:** Medium
+- **What changed:** Retrieval traces now serialize, deserialize, and replay against the supplied corpus; mismatches fail with `AuditIntegrityError`; SQLite audit events provide durable local storage.
+- **What broke or was discovered:** Phase 43 traces were inspectable in memory but had no tested durable replay path.
+- **Root cause:** Retrieval trace details were emitted as ordinary event data without a validated reconstruction contract.
+- **Fix applied or proposed:** Add validated trace round-tripping and compare every retrieval stage during replay, while reusing the existing local audit hash chain.
+- **Why this fix:** A reviewer can detect tampering or corpus drift rather than accepting a persisted selection without recomputation.
+- **Remaining risk:** The audit chain is local, hierarchy and authority metadata are unauthenticated, unavailable historical sources cannot be recreated, and distributed replay is untested.
+- **Refactor required:** Yes before trusted external retrieval or independently durable audit deployment.
+- **Related controls:** INV-FAIL-002, INV-AUD-001 through INV-AUD-003, TD-043, TD-049, AUD50-005.
+- **Tests added:** Durable SQLite round-trip replay, tampered trace rejection, corpus-change rejection, and integrity verification.
+- **Tests still missing:** Immutable external anchoring, authenticated metadata, historical source snapshots, cross-process replay, and distributed recovery.
+- **Owner:** Nova Aegis
+- **Review date:** Before trusted external retrieval or the Phase 55 mandatory audit.
+
 ### TD-051 - Reliability evaluation exposes false route changes
 
 - **Phase:** 51

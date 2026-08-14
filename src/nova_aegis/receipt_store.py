@@ -51,6 +51,7 @@ class LocalExternalReceiptRegistry:
         self._secret = secret or secrets.token_bytes(32)
         self._lifetime_seconds = lifetime_seconds
         self._receipts: dict[str, ExternalExecutionReceipt] = {}
+        self._revoked_receipts: set[str] = set()
 
     def create(
         self,
@@ -94,8 +95,19 @@ class LocalExternalReceiptRegistry:
             expires_at,
             signature,
         )
-        self._receipts[receipt_id] = receipt
+        self.register(receipt)
         return receipt
+
+    def register(self, receipt: ExternalExecutionReceipt) -> None:
+        existing = self._receipts.get(receipt.receipt_id)
+        if existing is not None and existing != receipt:
+            raise ExternalReceiptError("External execution receipt ID has conflicting content")
+        self._receipts[receipt.receipt_id] = receipt
+
+    def revoke(self, receipt_id: str) -> None:
+        if receipt_id not in self._receipts:
+            raise ExternalReceiptError("External execution receipt is not registered")
+        self._revoked_receipts.add(receipt_id)
 
     def verify(
         self,
@@ -111,6 +123,8 @@ class LocalExternalReceiptRegistry:
         receipt = self._receipts.get(receipt_id)
         if receipt is None:
             raise ExternalReceiptError("External execution receipt is not registered")
+        if receipt_id in self._revoked_receipts:
+            raise ExternalReceiptError("External execution receipt is revoked")
         if receipt.expires_at <= int(time.time()):
             raise ExternalReceiptError("External execution receipt is expired")
         expected_signature = self._sign(
