@@ -2,7 +2,17 @@ from __future__ import annotations
 
 import pytest
 
-from nova_aegis import Evidence, GovernanceUnavailable, NovaAegisMVP, Praetor, ToolPolicy
+from nova_aegis import (
+    Evidence,
+    GovernanceUnavailable,
+    LocalRetriever,
+    LocalReliabilityMemory,
+    NovaAegisMVP,
+    Praetor,
+    ToolPolicy,
+    ReliabilityRecord,
+    RoutingWorkloadCase,
+)
 
 
 @pytest.fixture
@@ -45,6 +55,201 @@ def test_supported_question_returns_cited_pass_and_audit_event(documents: list[E
         "response_proposed",
         "response_assured",
     }
+    retrieval_event = next(
+        event for event in app.audit_log.events if event["event_type"] == "retrieval_completed"
+    )
+    trace = retrieval_event["retrieval_trace"]
+    assert trace["candidate_source_ids"] == ("PROC-001", "POL-001")
+    assert trace["ranked_source_ids"] == ("PROC-001",)
+    assert trace["selected_source_ids"] == ("PROC-001",)
+
+
+def test_retrieval_scopes_authority_and_hierarchy_before_ranking() -> None:
+    retriever = LocalRetriever(
+        [
+            Evidence(
+                source_id="IN-SCOPE",
+                title="Service A procedure",
+                text="Restart requires operator approval.",
+                authority="operations-policy",
+                hierarchy=("corp", "ops", "service-a"),
+                provenance_verified=True,
+            ),
+            Evidence(
+                source_id="WRONG-AUTHORITY",
+                title="Service A procedure",
+                text="Restart requires no approval.",
+                authority="untrusted-note",
+                hierarchy=("corp", "ops", "service-a"),
+            ),
+            Evidence(
+                source_id="WRONG-SCOPE",
+                title="Service A procedure",
+                text="Restart requires no approval.",
+                authority="operations-policy",
+                hierarchy=("corp", "finance", "service-a"),
+            ),
+        ]
+    )
+
+    citations, trace = retriever.retrieve_with_trace(
+        "What approval does the Service A restart procedure require?",
+        authorities=("operations-policy",),
+        hierarchy_prefix=("corp", "ops"),
+    )
+
+    assert [citation.source_id for citation in citations] == ["IN-SCOPE"]
+    assert trace.candidate_source_ids == ("IN-SCOPE", "WRONG-AUTHORITY", "WRONG-SCOPE")
+    assert trace.authority_filtered_source_ids == ("IN-SCOPE", "WRONG-SCOPE")
+    assert trace.hierarchy_filtered_source_ids == ("IN-SCOPE",)
+    assert trace.ranked_source_ids == ("IN-SCOPE",)
+    assert trace.selected_source_ids == ("IN-SCOPE",)
+
+
+def test_reliability_memory_isolated_from_factual_assurance(documents: list[Evidence]) -> None:
+    reliability = LocalReliabilityMemory()
+    reliability.record(ReliabilityRecord("agent-1", "restart-policy", "failure", 1))
+    reliability.record(ReliabilityRecord("agent-1", "restart-policy", "success", 2))
+
+    app = NovaAegisMVP(documents)
+    result = app.answer("What approval does restarting Service A require?")
+
+    assert reliability.success_rate("agent-1", "restart-policy") == 0.5
+    assert result["assurance"] == "PASS"
+    assert result["evidence"][0]["source_id"] == "PROC-001"
+    assert "reliability" not in result["evidence"][0]
+
+
+def test_reliability_routing_selects_best_fresh_candidate() -> None:
+    reliability = LocalReliabilityMemory(
+        [
+            ReliabilityRecord("agent-a", "review", "success", 98),
+            ReliabilityRecord("agent-a", "review", "failure", 99),
+            ReliabilityRecord("agent-b", "review", "success", 98),
+            ReliabilityRecord("agent-b", "review", "success", 99),
+        ]
+    )
+
+    decision = reliability.route(
+        ("agent-a", "agent-b"), "review", now=100, max_age=5
+    )
+
+    assert decision.selected_subject == "agent-b"
+    assert decision.baseline_subject == "agent-a"
+    assert decision.used_reliability
+    assert decision.success_rates == (("agent-a", 0.5), ("agent-b", 1.0))
+    assert decision.candidate_subjects == ("agent-a", "agent-b")
+    assert decision.eligible_subjects == ("agent-a", "agent-b")
+    assert decision.to_dict()["selected_subject"] == "agent-b"
+
+
+def test_reliability_routing_falls_back_on_missing_stale_or_ambiguous_history() -> None:
+    missing = LocalReliabilityMemory()
+    assert missing.route(("agent-a", "agent-b"), "review", now=10, max_age=5).reason.startswith(
+        "Reliability history is missing"
+    )
+
+    stale = LocalReliabilityMemory(
+        [ReliabilityRecord("agent-b", "review", "success", 1)]
+    )
+    stale_decision = stale.route(("agent-a", "agent-b"), "review", now=10, max_age=5)
+    assert stale_decision.selected_subject == "agent-a"
+    assert not stale_decision.used_reliability
+    assert stale_decision.candidate_subjects == ("agent-a", "agent-b")
+    assert stale_decision.eligible_subjects == ()
+
+    tied = LocalReliabilityMemory(
+        [
+            ReliabilityRecord("agent-a", "review", "success", 9),
+            ReliabilityRecord("agent-a", "review", "failure", 10),
+            ReliabilityRecord("agent-b", "review", "success", 9),
+            ReliabilityRecord("agent-b", "review", "failure", 10),
+        ]
+    )
+    tied_decision = tied.route(("agent-a", "agent-b"), "review", now=10, max_age=5)
+    assert tied_decision.selected_subject == "agent-a"
+    assert "tied" in tied_decision.reason
+
+
+def test_reliability_memory_rejects_poisoned_outcomes() -> None:
+    reliability = LocalReliabilityMemory()
+
+    with pytest.raises(ValueError, match="success or failure"):
+        reliability.record(ReliabilityRecord("agent-a", "review", "trusted", 1))
+
+
+def test_reliability_replay_compares_fixed_workload_to_baseline() -> None:
+    reliability = LocalReliabilityMemory(
+        [
+            ReliabilityRecord("agent-a", "review", "failure", 98),
+            ReliabilityRecord("agent-a", "review", "failure", 99),
+            ReliabilityRecord("agent-b", "review", "success", 98),
+            ReliabilityRecord("agent-b", "review", "success", 99),
+            ReliabilityRecord("agent-a", "incident", "success", 99),
+            ReliabilityRecord("agent-a", "incident", "failure", 100),
+        ]
+    )
+    workload = (
+        RoutingWorkloadCase(
+            "case-improve", ("agent-a", "agent-b"), "review", "agent-b", 100, 5
+        ),
+        RoutingWorkloadCase(
+            "case-fallback", ("agent-a", "agent-b"), "missing", "agent-a", 100, 5
+        ),
+        RoutingWorkloadCase(
+            "case-unchanged", ("agent-a",), "incident", "agent-a", 100, 5
+        ),
+    )
+
+    result = reliability.replay(workload)
+
+    assert result.case_ids == ("case-improve", "case-fallback", "case-unchanged")
+    assert result.baseline_accuracy == pytest.approx(2 / 3)
+    assert result.reliability_accuracy == pytest.approx(1.0)
+    assert result.accuracy_delta == pytest.approx(1 / 3)
+    assert result.reliability_changes == 1
+    assert result.fallback_count == 2
+    assert result.false_route_changes == 0
+    assert result.genuine_improvements == 1
+    assert result.baseline_subjects == ("agent-a", "agent-a", "agent-a")
+    assert result.reliability_subjects == ("agent-b", "agent-a", "agent-a")
+    assert result.to_dict()["case_ids"] == (
+        "case-improve",
+        "case-fallback",
+        "case-unchanged",
+    )
+
+
+def test_reliability_replay_rejects_empty_or_duplicate_workloads() -> None:
+    reliability = LocalReliabilityMemory()
+    case = RoutingWorkloadCase("case-1", ("agent-a",), "review", "agent-a", 1, 1)
+
+    with pytest.raises(ValueError, match="at least one"):
+        reliability.replay(())
+    with pytest.raises(ValueError, match="unique"):
+        reliability.replay((case, case))
+
+
+def test_reliability_replay_exposes_fabricated_history_as_false_route_change() -> None:
+    reliability = LocalReliabilityMemory(
+        [
+            ReliabilityRecord("agent-a", "review", "success", 99),
+            ReliabilityRecord("agent-a", "review", "failure", 100),
+            ReliabilityRecord("agent-b", "review", "success", 99),
+            ReliabilityRecord("agent-b", "review", "success", 100),
+        ]
+    )
+    workload = (
+        RoutingWorkloadCase(
+            "case-fabricated", ("agent-a", "agent-b"), "review", "agent-a", 100, 5
+        ),
+    )
+
+    result = reliability.replay(workload)
+
+    assert result.reliability_changes == 1
+    assert result.false_route_changes == 1
+    assert result.genuine_improvements == 0
 
 
 def test_missing_evidence_returns_review_without_answer(documents: list[Evidence]) -> None:

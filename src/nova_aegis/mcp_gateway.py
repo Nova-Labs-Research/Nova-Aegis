@@ -20,6 +20,7 @@ from .core import (
     Praetor,
 )
 from .receipt_store import ExternalReceiptError, ExternalReceiptVerifier
+from .approval_store import ApprovalStore, InMemoryApprovalStore, RecoveryApprovalRecord
 from .task_store import InMemoryTaskStore, TaskRecord, TaskStore
 
 
@@ -61,6 +62,19 @@ class McpTaskState:
 
 
 @dataclass(frozen=True)
+class McpRecoveryApproval:
+    approval_id: str
+    task_id: str
+    approver_id: str
+    resolution: str
+    external_receipt_id: str
+    result_hash: str
+    issued_at: int
+    expires_at: int
+    signature: str
+
+
+@dataclass(frozen=True)
 class McpGatewayRequest:
     method: str
     name: str
@@ -85,8 +99,10 @@ class McpGateway:
         secret: bytes | None = None,
         lifetime_seconds: int = 300,
         max_active_tasks_per_user: int = 2,
+        worker_lease_seconds: int = 30,
         task_store: TaskStore | None = None,
         receipt_verifier: ExternalReceiptVerifier | None = None,
+        approval_store: ApprovalStore | None = None,
     ) -> None:
         if not resource_uri.startswith("https://"):
             raise ValueError("MCP resource URI must use HTTPS")
@@ -94,6 +110,8 @@ class McpGateway:
             raise ValueError("MCP token lifetime must be positive")
         if max_active_tasks_per_user < 1:
             raise ValueError("MCP active task quota must be positive")
+        if worker_lease_seconds < 1:
+            raise ValueError("MCP worker lease must be positive")
         self.resource_uri = resource_uri.rstrip("/")
         self._identity_authority = identity_authority
         self._praetor = praetor
@@ -102,11 +120,14 @@ class McpGateway:
         self._secret = secret or secrets.token_bytes(32)
         self._lifetime_seconds = lifetime_seconds
         self._max_active_tasks_per_user = max_active_tasks_per_user
+        self._worker_lease_seconds = worker_lease_seconds
         self._issued_tokens: dict[str, IdentityCredential] = {}
         self._task_lock = threading.Lock()
         self._inflight_tasks: set[str] = set()
         self._task_store = task_store or InMemoryTaskStore()
         self._receipt_verifier = receipt_verifier
+        self._approval_store = approval_store or InMemoryApprovalStore()
+        self._replay_recovery_journal()
 
     def create_task_state(
         self,
@@ -177,13 +198,48 @@ class McpGateway:
         access_token: McpAccessToken,
         headers: Mapping[str, str],
         request: McpGatewayRequest,
+        worker_id: str,
     ) -> dict[str, Any]:
         """Runs one pending synthetic task through the stateless gateway checks."""
+        if not isinstance(worker_id, str) or not worker_id.strip():
+            raise McpGatewayError("MCP worker identity is required")
         return self.invoke_stateless(
             access_token=access_token,
             headers=headers,
             request=request,
+            worker_id=worker_id,
         )
+
+    def renew_task(
+        self,
+        *,
+        access_token: McpAccessToken,
+        task_state: McpTaskState,
+        worker_id: str,
+        fencing_token: int,
+    ) -> bool:
+        context = self._validate_token(access_token)
+        self._validate_task_identity(task_state, context)
+        if not isinstance(worker_id, str) or not worker_id.strip() or fencing_token < 1:
+            raise McpGatewayError("MCP worker lease renewal identity is invalid")
+        with self._task_lock:
+            renewed = self._task_store.renew(
+                task_state.task_id,
+                worker_id=worker_id,
+                fencing_token=fencing_token,
+                lease_expires_at=int(time.time()) + self._worker_lease_seconds,
+                now=int(time.time()),
+            )
+        if renewed:
+            self._audit_log.append(
+                "mcp_task_lease_renewed",
+                task_id=task_state.task_id,
+                tool=task_state.tool_name,
+                user_id=context.user_id,
+                worker_id=worker_id,
+                fencing_token=fencing_token,
+            )
+        return renewed
 
     def cancel_task(
         self,
@@ -214,6 +270,7 @@ class McpGateway:
         resolution: str,
         external_receipt_id: str,
         result: Mapping[str, str] | None = None,
+        approval_id: str | None = None,
     ) -> dict[str, Any]:
         try:
             context = self._validate_token(access_token)
@@ -246,21 +303,70 @@ class McpGateway:
                 raise McpGatewayError(f"External execution receipt verification failed: {error}") from error
             if verified.status != resolution:
                 raise McpGatewayError("External execution receipt resolution does not match")
+            if not isinstance(approval_id, str) or not approval_id.strip():
+                raise McpGatewayError("MCP task recovery requires a second-operator approval")
             with self._task_lock:
-                record = self._task_store.get(task_state.task_id)
-                if record is None or record.status != "recovery_required":
-                    raise McpGatewayError("MCP task is not awaiting recovery resolution")
+                approval_record = self._approval_store.get(approval_id)
+                approval = (
+                    McpRecoveryApproval(*approval_record.__dict__.values())
+                    if approval_record is not None
+                    else None
+                )
+                if approval is None:
+                    raise McpGatewayError("MCP task recovery approval is unknown")
+                if approval.expires_at <= int(time.time()):
+                    raise McpGatewayError("MCP task recovery approval is expired")
+                if approval.task_id != task_state.task_id or approval.approver_id == context.user_id:
+                    raise McpGatewayError("MCP task recovery approval is not independent")
+                if (
+                    approval.resolution != resolution
+                    or approval.external_receipt_id != external_receipt_id
+                    or approval.result_hash != self._result_hash(verifier_result)
+                ):
+                    raise McpGatewayError("MCP task recovery approval does not match the resolution")
+                expected_signature = self._sign_approval(approval)
+                if not secrets.compare_digest(approval.signature, expected_signature):
+                    raise McpGatewayError("MCP task recovery approval signature is invalid")
+                transactional_recovery = (
+                    self._task_store is self._approval_store
+                    and hasattr(self._task_store, "finalize_recovery")
+                )
                 reconciled_result = {
                     "resolution": resolution,
                     "external_receipt_id": external_receipt_id,
                     "external_receipt_issued_at": str(verified.issued_at),
                     **verifier_result,
                 }
-                self._task_store.update(
-                    task_state.task_id,
+                if not transactional_recovery and not self._approval_store.begin_recovery(
+                    approval_id,
+                    task_id=task_state.task_id,
                     status=f"reconciled_{resolution}",
                     result=reconciled_result,
-                )
+                    now=int(time.time()),
+                ):
+                    raise McpGatewayError("MCP task recovery approval was already consumed, revoked, or expired")
+            with self._task_lock:
+                if transactional_recovery:
+                    finalized = self._task_store.finalize_recovery(
+                        approval_id,
+                        task_id=task_state.task_id,
+                        status=f"reconciled_{resolution}",
+                        result=reconciled_result,
+                        now=int(time.time()),
+                    )
+                    if not finalized:
+                        raise McpGatewayError("MCP recovery transaction could not be committed")
+                else:
+                    record = self._task_store.get(task_state.task_id)
+                    if record is None or record.status != "recovery_required":
+                        raise McpGatewayError("MCP task is not awaiting recovery resolution")
+                    self._task_store.update(
+                        task_state.task_id,
+                        status=f"reconciled_{resolution}",
+                        result=reconciled_result,
+                    )
+                    if not self._approval_store.complete_recovery(approval_id):
+                        raise McpGatewayError("MCP recovery journal completion failed")
             self._audit_log.append(
                 "mcp_task_reconciled",
                 task_id=task_state.task_id,
@@ -282,11 +388,121 @@ class McpGateway:
             )
             return {"result": None, "assurance": AssuranceStatus.FAIL.value, "warning": str(error)}
 
+    def revoke_recovery_approval(
+        self,
+        *,
+        access_token: McpAccessToken,
+        approval_id: str,
+    ) -> bool:
+        context = self._validate_token(access_token)
+        if context.role != "operator" or self.RECOVERY_SCOPE not in access_token.scopes:
+            raise McpGatewayError("MCP approval revocation requires the operator recovery scope")
+        approval = self._approval_store.get(approval_id)
+        if approval is None or approval.approver_id != context.user_id:
+            raise McpGatewayError("MCP recovery approval is not owned by this operator")
+        revoked = self._approval_store.revoke(approval_id, now=int(time.time()))
+        if revoked:
+            self._audit_log.append(
+                "mcp_task_recovery_revoked",
+                approval_id=approval_id,
+                approver_id=context.user_id,
+                task_id=approval.task_id,
+            )
+        return revoked
+
+    def approve_recovery(
+        self,
+        *,
+        access_token: McpAccessToken,
+        task_state: McpTaskState,
+        resolution: str,
+        external_receipt_id: str,
+        result: Mapping[str, str] | None = None,
+    ) -> McpRecoveryApproval:
+        context = self._validate_token(access_token)
+        self._validate_task_signature(task_state)
+        if context.role != "operator":
+            raise McpGatewayError("MCP task recovery approval requires the operator role")
+        if self.RECOVERY_SCOPE not in access_token.scopes:
+            raise McpGatewayError("MCP token lacks the recovery scope")
+        if context.user_id == task_state.user_id:
+            raise McpGatewayError("MCP task recovery approval must be independent of the task owner")
+        if resolution not in {"completed", "abandoned"}:
+            raise McpGatewayError("MCP task recovery resolution is invalid")
+        if not isinstance(external_receipt_id, str) or not external_receipt_id.strip():
+            raise McpGatewayError("MCP task recovery requires an external receipt reference")
+        verifier_result = dict(result or {})
+        if any(not isinstance(value, str) or not value.strip() for value in verifier_result.values()):
+            raise McpGatewayError("MCP task recovery result values must be non-empty strings")
+        with self._task_lock:
+            record = self._task_store.get(task_state.task_id)
+            if record is None or record.status != "recovery_required":
+                raise McpGatewayError("MCP task is not awaiting recovery resolution")
+            issued_at = int(time.time())
+            approval = McpRecoveryApproval(
+                approval_id=secrets.token_urlsafe(24),
+                task_id=task_state.task_id,
+                approver_id=context.user_id,
+                resolution=resolution,
+                external_receipt_id=external_receipt_id,
+                result_hash=self._result_hash(verifier_result),
+                issued_at=issued_at,
+                expires_at=min(task_state.expires_at, issued_at + self._lifetime_seconds),
+                signature="",
+            )
+            approval = McpRecoveryApproval(
+                **{**approval.__dict__, "signature": self._sign_approval(approval)}
+            )
+            self._approval_store.create(RecoveryApprovalRecord(**approval.__dict__))
+        self._audit_log.append(
+            "mcp_task_recovery_approved",
+            task_id=task_state.task_id,
+            tool=task_state.tool_name,
+            approver_id=context.user_id,
+            approval_id=approval.approval_id,
+        )
+        return approval
+
     def task_status(self, task_state: McpTaskState) -> str:
         with self._task_lock:
             self._expire_tasks()
             record = self._task_store.get(task_state.task_id)
             return record.status if record is not None else "unknown"
+
+    def _replay_recovery_journal(self) -> None:
+        for journal in self._approval_store.pending_recoveries():
+            try:
+                journal_valid = (
+                    self._approval_store.verify_journal(journal)
+                    if hasattr(self._approval_store, "verify_journal")
+                    else journal.verify_integrity()
+                )
+                if not journal_valid:
+                    self._audit_log.append(
+                        "mcp_task_recovery_replay_blocked",
+                        task_id=journal.task_id,
+                        reason="recovery journal integrity verification failed",
+                    )
+                    continue
+                with self._task_lock:
+                    record = self._task_store.get(journal.task_id)
+                    if record is None:
+                        continue
+                    if record.status == "recovery_required":
+                        self._task_store.update(
+                            journal.task_id,
+                            status=journal.status,
+                            result=journal.result,
+                        )
+                    if self._task_store.get(journal.task_id).status == journal.status:
+                        self._approval_store.complete_recovery(journal.journal_id)
+                        self._audit_log.append(
+                            "mcp_task_recovery_replayed",
+                            task_id=journal.task_id,
+                            status=journal.status,
+                        )
+            except (ValueError, McpGatewayError):
+                continue
 
     def _verify_receipt(
         self,
@@ -308,8 +524,39 @@ class McpGateway:
             result=result,
         )
 
+    def _validate_task_signature(self, task_state: McpTaskState) -> None:
+        if not isinstance(task_state, McpTaskState) or task_state.expires_at <= int(time.time()):
+            raise McpGatewayError("MCP task state is invalid or expired")
+        owner_context = AuthorizationContext(task_state.user_id, task_state.role)
+        expected = self._sign_task(
+            task_state.task_id,
+            owner_context,
+            task_state.audience,
+            task_state.tool_name,
+            task_state.parameters_hash,
+            task_state.issued_at,
+            task_state.expires_at,
+        )
+        if not secrets.compare_digest(task_state.signature, expected):
+            raise McpGatewayError("MCP task state signature is invalid")
+
+    @staticmethod
+    def _result_hash(result: Mapping[str, str]) -> str:
+        return hashlib.sha256(
+            json.dumps(dict(result), sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+
+    def _sign_approval(self, approval: McpRecoveryApproval) -> str:
+        payload = (
+            f"{approval.approval_id}|{approval.task_id}|{approval.approver_id}|{approval.resolution}|"
+            f"{approval.external_receipt_id}|{approval.result_hash}|{approval.issued_at}|{approval.expires_at}"
+        ).encode("utf-8")
+        return hashlib.blake2b(payload, key=self._secret, digest_size=32).hexdigest()
+
     def close(self) -> None:
-        self._task_store.close()
+        self._approval_store.close()
+        if self._task_store is not self._approval_store:
+            self._task_store.close()
 
     def discover_tools(self, credential: IdentityCredential) -> tuple[McpToolDescriptor, ...]:
         context = self._identity_authority.authenticate(credential)
@@ -366,13 +613,14 @@ class McpGateway:
         access_token: McpAccessToken,
         headers: Mapping[str, str],
         request: McpGatewayRequest,
+        worker_id: str = "inline-worker",
     ) -> dict[str, Any]:
         try:
             context = self._validate_token(access_token)
             self._validate_request_headers(headers, request)
             self._validate_task_state(request.task_state, context, request)
             self._validate_meta(request.meta)
-            return self._invoke_stateless_once(access_token, request, context)
+            return self._invoke_stateless_once(access_token, request, context, worker_id)
         except (IdentityError, McpGatewayError, ValueError) as error:
             return self._blocked(request.name, str(error))
 
@@ -414,6 +662,7 @@ class McpGateway:
         access_token: McpAccessToken,
         request: McpGatewayRequest,
         context: AuthorizationContext,
+        worker_id: str,
     ) -> dict[str, Any]:
         task_id = request.task_state.task_id
         with self._task_lock:
@@ -459,15 +708,26 @@ class McpGateway:
                     "assurance": AssuranceStatus.REVIEW.value,
                     "warning": "MCP task recovery is required before retrying execution",
                 }
+            if record.status == "in_progress":
+                raise McpGatewayError("MCP task is already in progress under another worker")
             if record.status != "pending":
                 raise McpGatewayError("MCP task is not available for execution")
-            self._task_store.update(task_id, status="in_progress")
+            lease_expires_at = int(time.time()) + self._worker_lease_seconds
+            fencing_token = self._task_store.claim(
+                task_id,
+                worker_id=worker_id,
+                lease_expires_at=lease_expires_at,
+            )
+            if fencing_token is None:
+                raise McpGatewayError("MCP task could not be claimed by this worker")
             self._inflight_tasks.add(task_id)
         self._audit_log.append(
             "mcp_task_started",
             task_id=task_id,
             tool=request.name,
             user_id=context.user_id,
+            worker_id=worker_id,
+            fencing_token=fencing_token,
         )
         try:
             response = self._invoke_authorized(
@@ -478,20 +738,35 @@ class McpGateway:
             )
             if response["assurance"] == AssuranceStatus.PASS.value:
                 with self._task_lock:
-                    self._task_store.update(
+                    completed = self._task_store.finish(
                         task_id,
+                        worker_id=worker_id,
+                        fencing_token=fencing_token,
                         status="completed",
                         result=dict(response["result"]),
+                        now=int(time.time()),
                     )
+                    if not completed:
+                        self._task_store.expire(int(time.time()))
+                        raise McpGatewayError("MCP worker lease expired before task completion")
             return response
         except Exception as error:
             with self._task_lock:
-                self._task_store.update(task_id, status="failed")
+                failed = self._task_store.finish(
+                    task_id,
+                    worker_id=worker_id,
+                    fencing_token=fencing_token,
+                    status="failed",
+                    now=int(time.time()),
+                )
+                if not failed:
+                    self._task_store.expire(int(time.time()))
             self._audit_log.append(
                 "mcp_task_failed",
                 task_id=task_id,
                 tool=request.name,
                 user_id=context.user_id,
+                worker_id=worker_id,
                 reason=str(error),
             )
             return {
@@ -502,9 +777,6 @@ class McpGateway:
         finally:
             with self._task_lock:
                 self._inflight_tasks.discard(task_id)
-                record = self._task_store.get(task_id)
-                if record is not None and record.status == "in_progress":
-                    self._task_store.update(task_id, status="pending")
 
     def _blocked(self, tool_name: str, reason: str) -> dict[str, Any]:
         self._audit_log.append("mcp_request_blocked", tool=tool_name, reason=reason)

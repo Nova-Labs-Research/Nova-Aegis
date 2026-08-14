@@ -57,6 +57,7 @@ class Evidence:
     claim: str | None = None
     status: str = "current"
     provenance_verified: bool = False
+    hierarchy: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,19 @@ class Citation:
     provenance: Provenance
     claim_group: str | None = None
     claim: str | None = None
+
+
+@dataclass(frozen=True)
+class RetrievalTrace:
+    question: str
+    authority_scope: tuple[str, ...]
+    hierarchy_scope: tuple[str, ...]
+    candidate_source_ids: tuple[str, ...]
+    authority_filtered_source_ids: tuple[str, ...]
+    hierarchy_filtered_source_ids: tuple[str, ...]
+    ranked_source_ids: tuple[str, ...]
+    ranked_scores: tuple[tuple[str, int], ...]
+    selected_source_ids: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -375,8 +389,13 @@ class AuditLog:
             "mcp_task_created",
             "mcp_task_cancelled",
             "mcp_task_started",
+            "mcp_task_lease_renewed",
             "mcp_task_failed",
             "mcp_task_recovery_required",
+            "mcp_task_recovery_approved",
+            "mcp_task_recovery_revoked",
+            "mcp_task_recovery_replayed",
+            "mcp_task_recovery_replay_blocked",
             "mcp_task_reconciled",
             "mcp_task_reconciliation_blocked",
         }
@@ -669,19 +688,43 @@ class LocalRetriever:
         self._documents = tuple(documents)
 
     def retrieve(self, question: str, limit: int = 3) -> tuple[Citation, ...]:
+        citations, _ = self.retrieve_with_trace(question, limit=limit)
+        return citations
+
+    def retrieve_with_trace(
+        self,
+        question: str,
+        limit: int = 3,
+        *,
+        authorities: Iterable[str] | None = None,
+        hierarchy_prefix: Iterable[str] | None = None,
+    ) -> tuple[tuple[Citation, ...], RetrievalTrace]:
         if not isinstance(question, str) or not question.strip():
             raise ValueError("Question must be a non-empty string")
         if limit < 1:
             raise ValueError("Retrieval limit must be positive")
+        authority_scope = tuple(dict.fromkeys(authorities or ()))
+        scope = tuple(hierarchy_prefix or ())
         question_terms = self._terms(question)
+        candidate_source_ids = tuple(document.source_id for document in self._documents)
+        authority_filtered = tuple(
+            document
+            for document in self._documents
+            if not authority_scope or document.authority in authority_scope
+        )
+        hierarchy_filtered = tuple(
+            document
+            for document in authority_filtered
+            if not scope or document.hierarchy[: len(scope)] == scope
+        )
         ranked: list[tuple[int, Evidence]] = []
-        for document in self._documents:
+        for document in hierarchy_filtered:
             document_terms = self._terms(f"{document.title} {document.text}")
             score = len(question_terms & document_terms)
             if score:
                 ranked.append((score, document))
         ranked.sort(key=lambda item: (-item[0], item[1].source_id))
-        return tuple(
+        citations = tuple(
             Citation(
                 source_id=document.source_id,
                 title=document.title,
@@ -700,6 +743,22 @@ class LocalRetriever:
             )
             for score, document in ranked[:limit]
         )
+        trace = RetrievalTrace(
+            question=question,
+            authority_scope=authority_scope,
+            hierarchy_scope=scope,
+            candidate_source_ids=candidate_source_ids,
+            authority_filtered_source_ids=tuple(
+                document.source_id for document in authority_filtered
+            ),
+            hierarchy_filtered_source_ids=tuple(
+                document.source_id for document in hierarchy_filtered
+            ),
+            ranked_source_ids=tuple(document.source_id for _, document in ranked),
+            ranked_scores=tuple((document.source_id, score) for score, document in ranked),
+            selected_source_ids=tuple(citation.source_id for citation in citations),
+        )
+        return citations, trace
 
     @staticmethod
     def _terms(text: str) -> set[str]:
@@ -858,11 +917,12 @@ class NovaAegisMVP:
     def answer(self, question: str) -> dict[str, Any]:
         request_id = str(uuid4())
         self.audit_log.append("request_received", request_id=request_id, question=question)
-        citations = self.retriever.retrieve(question)
+        citations, retrieval_trace = self.retriever.retrieve_with_trace(question)
         self.audit_log.append(
             "retrieval_completed",
             request_id=request_id,
             source_ids=[citation.source_id for citation in citations],
+            retrieval_trace=asdict(retrieval_trace),
         )
         proposed_answer = self._propose_answer(question, citations)
         self.audit_log.append(

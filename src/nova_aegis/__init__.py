@@ -19,6 +19,7 @@ from .core import (
     NovaAegisMVP,
     Praetor,
     Provenance,
+    RetrievalTrace,
     PolicyIntegrityError,
     Response,
     RuleEvaluation,
@@ -39,6 +40,7 @@ from .mcp_gateway import (
     McpGateway,
     McpGatewayError,
     McpGatewayRequest,
+    McpRecoveryApproval,
     McpTaskState,
     McpToolDescriptor,
 )
@@ -48,7 +50,23 @@ from .receipt_store import (
     ExternalReceiptVerifier,
     LocalExternalReceiptRegistry,
 )
+from .approval_store import (
+    InMemoryApprovalStore,
+    RecoveryApprovalRecord,
+    RecoveryJournalRecord,
+    SQLiteApprovalStore,
+)
 from .task_store import InMemoryTaskStore, SQLiteTaskStore, TaskRecord
+from .recovery_store import SQLiteRecoveryStore
+from .key_provider import JournalKeyProvider, LocalJournalKeyProvider
+from .reliability_memory import (
+    LocalReliabilityMemory,
+    ReliabilityRecord,
+    RoutingDecision,
+    RoutingExperimentResult,
+    RoutingWorkloadCase,
+)
+from .performance_profile import PipelineProfile, StageTiming, profile_pipeline
 
 __all__ = [
     "AgentK",
@@ -69,6 +87,7 @@ __all__ = [
     "NovaAegisMVP",
     "Praetor",
     "Provenance",
+    "RetrievalTrace",
     "PolicyIntegrityError",
     "Response",
     "RuleEvaluation",
@@ -85,13 +104,29 @@ __all__ = [
     "McpGateway",
     "McpGatewayError",
     "McpGatewayRequest",
+    "McpRecoveryApproval",
     "McpTaskState",
     "McpToolDescriptor",
     "InMemoryTaskStore",
     "SQLiteTaskStore",
+    "SQLiteRecoveryStore",
+    "JournalKeyProvider",
+    "LocalJournalKeyProvider",
+    "LocalReliabilityMemory",
+    "ReliabilityRecord",
+    "RoutingDecision",
+    "RoutingExperimentResult",
+    "RoutingWorkloadCase",
+    "PipelineProfile",
+    "StageTiming",
+    "profile_pipeline",
     "TaskRecord",
     "ExternalExecutionReceipt",
     "ExternalReceiptError",
     "ExternalReceiptVerifier",
     "LocalExternalReceiptRegistry",
+    "InMemoryApprovalStore",
+    "RecoveryApprovalRecord",
+    "RecoveryJournalRecord",
+    "SQLiteApprovalStore",
 ]
