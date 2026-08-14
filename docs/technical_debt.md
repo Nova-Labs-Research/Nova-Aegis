@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-081 - Synthetic policy authority remains unprotected
+
+- **Phase:** 81
+- **Status:** Adapted for local approval-binding tests; protected policy authority remains blocked
+- **Severity:** High
+- **What changed:** Added signed synthetic policy releases binding boundary, decision, signer, approver, approval ID, and production-disabled state.
+- **What broke or was discovered:** Self-approval, mismatched approvals, revoked approvals, unknown keys, tampering, and production state fail closed, but local identities and keys do not establish organizational authority.
+- **Root cause:** The authority has no protected signer custody, approval control plane, organizational identity, or distributed policy consistency.
+- **Fix applied or proposed:** Keep the authority synthetic and production-disabled; require protected policy authority and deployment enforcement before real enablement.
+- **Why this fix:** It tests separation of duties without promoting caller-supplied metadata into authorization.
+- **Remaining risk:** Local compromise, forged identity labels, approval loss, distributed disagreement, and deployment bypass remain possible.
+- **Refactor required:** Yes before production boundary enablement.
+- **Related controls:** `docs/research/phase-81-synthetic-policy-authority.md`, AUD80-001, AUD80-002, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003.
+- **Tests added:** Distinct signer/approver, self-approval, mismatched approval, revocation, tampering, production, and missing-key tests.
+- **Tests still missing:** Protected identity, approval custody, signer rotation, distributed policy agreement, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 85 mandatory audit or before any boundary expansion.
+
 ### TD-080 - Phase 80 mandatory audit findings
 
 - **Phase:** 80
