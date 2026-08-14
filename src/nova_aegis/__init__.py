@@ -74,9 +74,11 @@ from .boundary_decision import (
 )
 from .policy_authority import (
     LocalSyntheticIdentityRegistry,
+    LocalSyntheticPolicyKeyProvider,
     LocalSyntheticPolicyAuthority,
     PolicyApproval,
     PolicyAuthorityError,
+    SQLiteSyntheticIdentityRegistry,
     SignedPolicyRelease,
 )
 from .receipt_witness import (
@@ -152,6 +154,8 @@ __all__ = [
     "SQLiteBoundaryDecisionStore",
     "LocalSyntheticPolicyAuthority",
     "LocalSyntheticIdentityRegistry",
+        "LocalSyntheticPolicyKeyProvider",
+    "SQLiteSyntheticIdentityRegistry",
     "PolicyApproval",
     "PolicyAuthorityError",
     "SignedPolicyRelease",

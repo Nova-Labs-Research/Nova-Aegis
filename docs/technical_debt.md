@@ -39,6 +39,42 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-084 - Synthetic policy keys remain locally controlled
+
+- **Phase:** 84
+- **Status:** Mitigated for synthetic rotation testing; protected key custody remains blocked
+- **Severity:** High
+- **What changed:** Added injected policy signing-key rotation, active-key successor signing, non-active-key retirement, and lifecycle-authority checks.
+- **What broke or was discovered:** Without explicit lifecycle controls, old synthetic signing keys could remain trusted indefinitely and rotation authority was implicit.
+- **Root cause:** The policy key provider was a minimal static test fixture without rotation or retirement semantics.
+- **Fix applied or proposed:** Require the configured synthetic lifecycle authority for rotation and retirement; refuse verification after key retirement.
+- **Why this fix:** It tests fail-closed key lifecycle behavior while keeping custody local and explicit.
+- **Remaining risk:** Local key compromise, caller-controlled lifecycle authority, missing hardware protection, rotation propagation gaps, and deployment bypass remain possible.
+- **Refactor required:** Yes before protected policy authority or production boundary enablement.
+- **Related controls:** `docs/research/phase-84-synthetic-policy-key-lifecycle.md`, TD-081, AUD80-001, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Successor signing, old-key retirement refusal, active-key retirement refusal, and invalid lifecycle authority tests.
+- **Tests still missing:** Protected custody, rotation ceremony, distributed propagation, rollback prevention, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 85 mandatory audit or before any boundary expansion.
+
+### TD-083 - Synthetic identity replay remains locally durable
+
+- **Phase:** 83
+- **Status:** Mitigated for SQLite replay testing; protected retention remains blocked
+- **Severity:** High
+- **What changed:** Added append-only SQLite identity registration and revocation events with restart replay and terminal revocation.
+- **What broke or was discovered:** In-memory identity lifecycle state was lost on restart and could not demonstrate durable revocation.
+- **Root cause:** Phase 82 used a process-local registry with no persistence boundary.
+- **Fix applied or proposed:** Reconstruct identity state from append-only local SQLite events and reject re-registration after revocation.
+- **Why this fix:** It exercises restart behavior and preserves fail-closed lifecycle semantics in the synthetic environment.
+- **Remaining risk:** Local database loss or tampering, lack of immutable retention, split-brain ordering, stale replicas, and unprotected identity remain possible.
+- **Refactor required:** Yes before protected retention, distributed identity, or organizational authority.
+- **Related controls:** `docs/research/phase-83-durable-synthetic-identity-replay.md`, TD-082, AUD80-001, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Same-database close/reopen replay and terminal revocation tests.
+- **Tests still missing:** Crash consistency, corruption recovery, immutable storage, distributed ordering, and protected identity proof.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 85 mandatory audit or before any boundary expansion.
+
 ### TD-082 - Synthetic identity registry remains unprotected
 
 - **Phase:** 82

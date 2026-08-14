@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import hashlib
 import hmac
 import json
+import sqlite3
 from typing import Any, Mapping, Protocol
 
 from .boundary_preflight import BoundaryPreflightReport
@@ -13,6 +14,8 @@ from .boundary_preflight import BoundaryPreflightReport
 
 class PolicyAuthorityKeyProvider(Protocol):
     def get(self, key_id: str) -> bytes | None: ...
+    def rotate(self, key_id: str, secret: bytes, *, authority: str) -> None: ...
+    def retire(self, key_id: str, *, authority: str) -> None: ...
 
     def active(self) -> tuple[str, bytes] | None: ...
 
@@ -23,6 +26,48 @@ class PolicyIdentityRegistry(Protocol):
 
 class PolicyAuthorityError(RuntimeError):
     """Raised when a synthetic policy release cannot be trusted."""
+
+
+class LocalSyntheticPolicyKeyProvider:
+    """Process-local policy key lifecycle for synthetic rotation experiments."""
+
+    def __init__(
+        self,
+        keys: dict[str, bytes] | None = None,
+        *,
+        active_key_id: str | None = None,
+        rotation_authority: str = "synthetic-policy-key-admin",
+    ) -> None:
+        self._keys = {key_id: bytes(secret) for key_id, secret in (keys or {}).items()}
+        self._active_key_id = active_key_id or (next(iter(self._keys)) if self._keys else None)
+        self._rotation_authority = rotation_authority
+        if self._active_key_id is not None and self._active_key_id not in self._keys:
+            raise PolicyAuthorityError("Active policy key is not trusted")
+
+    def get(self, key_id: str) -> bytes | None:
+        return self._keys.get(key_id)
+
+    def active(self) -> tuple[str, bytes] | None:
+        if self._active_key_id is None:
+            return None
+        return self._active_key_id, self._keys[self._active_key_id]
+
+    def rotate(self, key_id: str, secret: bytes, *, authority: str) -> None:
+        self._require_authority(authority)
+        if not key_id.strip() or not secret:
+            raise PolicyAuthorityError("Policy key rotation requires a key ID and secret")
+        self._keys[key_id] = bytes(secret)
+        self._active_key_id = key_id
+
+    def retire(self, key_id: str, *, authority: str) -> None:
+        self._require_authority(authority)
+        if key_id == self._active_key_id:
+            raise PolicyAuthorityError("Cannot retire the active policy key")
+        self._keys.pop(key_id, None)
+
+    def _require_authority(self, authority: str) -> None:
+        if authority != self._rotation_authority:
+            raise PolicyAuthorityError("Policy key lifecycle authority is invalid")
 
 
 class LocalSyntheticIdentityRegistry:
@@ -45,6 +90,57 @@ class LocalSyntheticIdentityRegistry:
 
     def is_active(self, identity_id: str) -> bool:
         return identity_id in self._active
+
+
+class SQLiteSyntheticIdentityRegistry:
+    """Append-only local identity lifecycle events for synthetic replay."""
+
+    def __init__(self, connection: sqlite3.Connection) -> None:
+        self._connection = connection
+        self._connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS policy_identity_events (
+                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                identity_id TEXT NOT NULL,
+                event_type TEXT NOT NULL
+            )
+            """
+        )
+        self._connection.commit()
+
+    def register(self, identity_id: str) -> None:
+        if not identity_id.strip():
+            raise PolicyAuthorityError("Policy identity cannot be registered")
+        if self.is_active(identity_id) or self._is_revoked(identity_id):
+            raise PolicyAuthorityError("Policy identity cannot be registered")
+        self._connection.execute(
+            "INSERT INTO policy_identity_events(identity_id, event_type) VALUES (?, ?)",
+            (identity_id, "register"),
+        )
+        self._connection.commit()
+
+    def revoke(self, identity_id: str) -> None:
+        if not identity_id.strip() or not self.is_active(identity_id):
+            raise PolicyAuthorityError("Policy identity is not registered")
+        self._connection.execute(
+            "INSERT INTO policy_identity_events(identity_id, event_type) VALUES (?, ?)",
+            (identity_id, "revoke"),
+        )
+        self._connection.commit()
+
+    def is_active(self, identity_id: str) -> bool:
+        row = self._connection.execute(
+            "SELECT event_type FROM policy_identity_events WHERE identity_id = ? ORDER BY event_id DESC LIMIT 1",
+            (identity_id,),
+        ).fetchone()
+        return row is not None and row[0] == "register"
+
+    def _is_revoked(self, identity_id: str) -> bool:
+        row = self._connection.execute(
+            "SELECT 1 FROM policy_identity_events WHERE identity_id = ? AND event_type = 'revoke' LIMIT 1",
+            (identity_id,),
+        ).fetchone()
+        return row is not None
 
 
 @dataclass(frozen=True)

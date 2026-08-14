@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 80](docs/audits/phase-80-audit.md), with Phase 82 continuing synthetic research. The latest full validation reports 139 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
+The current audit gate is [Phase 80](docs/audits/phase-80-audit.md), with Phase 84 continuing synthetic research. The latest full validation reports 143 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
 
 ## Documents
 
@@ -84,6 +84,8 @@ The current audit gate is [Phase 80](docs/audits/phase-80-audit.md), with Phase 
 - [Phase 80 audit](docs/audits/phase-80-audit.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)
+- [Phase 83 durable synthetic identity replay research](docs/research/phase-83-durable-synthetic-identity-replay.md)
+- [Phase 84 synthetic policy key lifecycle research](docs/research/phase-84-synthetic-policy-key-lifecycle.md)
 - [Conceptual heritage](references/conceptual_heritage.md)
 - [Canonical flow](architecture/diagrams/canonical-flow.md)
 

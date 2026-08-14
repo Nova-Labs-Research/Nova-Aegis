@@ -30,6 +30,8 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 80 | Mandatory audit | Review Phases 75-79 and all unresolved production blockers | Audit gate |
 | 81 | Synthetic policy authority | Signed release decisions with distinct signer/approver and revocation checks | No policy authority claim |
 | 82 | Synthetic identity lifecycle | Injected identity registration, terminal revocation, and fail-closed authority validation | No protected identity claim |
+| 83 | Durable synthetic identity replay | Append-only SQLite registration/revocation events with restart replay | No protected retention claim |
+| 84 | Synthetic policy key lifecycle | Authority-gated key rotation, successor signing, and retirement refusal | No protected key custody claim |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
