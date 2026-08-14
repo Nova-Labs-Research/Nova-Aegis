@@ -49,3 +49,24 @@ def test_manifest_rejects_tampering_unknown_key_rollback_and_corpus_drift(docume
     changed = (*documents, Evidence(source_id="DOC-3", title="Third", text="Gamma"))
     with pytest.raises(ValueError, match="source identity"):
         manifest.verify(changed, provider)
+
+
+def test_manifest_key_rotation_overlap_and_retirement_fail_closed(documents) -> None:
+    provider = LocalJournalKeyProvider(
+        {"manifest-old": b"old-secret"}, rotation_authority="manifest-admin"
+    )
+    old_manifest = CorpusManifest.create(documents, provider, manifest_version=1)
+
+    with pytest.raises(PermissionError, match="authority"):
+        provider.rotate("manifest-new", b"new-secret", authority="forged-admin")
+
+    provider.rotate("manifest-new", b"new-secret", authority="manifest-admin")
+    new_manifest = CorpusManifest.create(documents, provider, manifest_version=2)
+    old_manifest.verify(documents, provider)
+    new_manifest.verify(documents, provider)
+    assert new_manifest.key_id == "manifest-new"
+
+    provider.retire("manifest-old", authority="manifest-admin")
+    with pytest.raises(ValueError, match="trusted"):
+        old_manifest.verify(documents, provider)
+    new_manifest.verify(documents, provider)

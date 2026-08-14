@@ -60,6 +60,8 @@ from .task_store import InMemoryTaskStore, SQLiteTaskStore, TaskRecord
 from .recovery_store import SQLiteRecoveryStore
 from .key_provider import JournalKeyProvider, LocalJournalKeyProvider
 from .corpus_manifest import CorpusManifest, ManifestKeyProvider, calculate_corpus_digest
+from .corpus_snapshot import CorpusSnapshot
+from .transport_envelope import SyntheticTransportEnvelope
 from .reliability_memory import (
     LocalReliabilityMemory,
     ReliabilityRecord,
@@ -116,6 +118,8 @@ __all__ = [
     "CorpusManifest",
     "ManifestKeyProvider",
     "calculate_corpus_digest",
+    "CorpusSnapshot",
+    "SyntheticTransportEnvelope",
     "LocalReliabilityMemory",
     "ReliabilityRecord",
     "RoutingDecision",

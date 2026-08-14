@@ -39,6 +39,42 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-070 - Phase 70 mandatory audit findings
+
+- **Phase:** 70
+- **Status:** Accepted for synthetic-only research; production blockers remain
+- **Severity:** High
+- **What changed:** Audited Phases 65-69, including receipt lifecycle checks, synthetic transport binding, measurement-only profiling, and review-burden/fairness metrics.
+- **What broke or was discovered:** No Critical synthetic defect was found. Local receipts, transport metadata, timing measurements, and routing metrics remain insufficient for independent evidence, secure network transport, optimization, or trusted reliability.
+- **Root cause:** The current system intentionally stops at local deterministic contracts before protected authority, network deployment, representative runtime evidence, and independent witnesses.
+- **Fix applied or proposed:** Continue synthetic-only experiments; retain blockers for consequential recovery, networked MCP, optimization, and reliability-driven routing.
+- **Why this fix:** It preserves human authority and avoids converting descriptive local measurements into authority.
+- **Remaining risk:** Cross-process receipt loss, transport attacks, misleading performance conclusions, and unfair or poisoned routing remain possible at real deployment boundaries.
+- **Refactor required:** Yes before any corresponding production boundary.
+- **Related controls:** `docs/audits/phase-70-audit.md`, AUD70-001 through AUD70-004, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003, INV-MCP-001 through INV-MCP-004.
+- **Tests added:** Snapshot, transport-envelope, manifest-lifecycle, and focused boundary tests; full 114-test regression passed.
+- **Tests still missing:** Independent receipt witnessing, network transport security, representative runtime quality/memory evidence, protected provenance, calibration, and fairness.
+- **Owner:** Nova Aegis
+- **Review date:** Before Phase 75 or any boundary expansion.
+
+### TD-065 - Phase 65 mandatory audit findings
+
+- **Phase:** 65
+- **Status:** Accepted for synthetic-only research; production blockers remain
+- **Severity:** High
+- **What changed:** Audited manifest key lifecycle, historical snapshots, SQLite failure probes, and synthetic reliability attestation.
+- **What broke or was discovered:** No Critical synthetic defect was found, but local key rotation, snapshots, SQLite state, and attestation metadata remain non-independent and deployment-specific.
+- **Root cause:** The current boundary intentionally proves fail-closed local behavior before protected custody, archival authority, distributed durability, or independent witnesses exist.
+- **Fix applied or proposed:** Continue synthetic-only experiments; retain blockers for protected authority, trusted retrieval, distributed recovery, and reliability adoption.
+- **Why this fix:** It preserves bounded authority and prevents local integrity signals from becoming production claims.
+- **Remaining risk:** Forged local lifecycle state, unavailable historical sources, physical durability failures, and poisoned reliability claims remain possible.
+- **Refactor required:** Yes before any corresponding production boundary.
+- **Related controls:** `docs/audits/phase-65-audit.md`, AUD65-001 through AUD65-004, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Manifest lifecycle and snapshot rollback/digest failure tests.
+- **Tests still missing:** Protected custody, immutable archival restoration, crash/failover evidence, independent attestation, calibration, and fairness.
+- **Owner:** Nova Aegis
+- **Review date:** Before Phase 70 or any boundary expansion.
+
 ### TD-060 - Phase 60 mandatory audit findings
 
 - **Phase:** 60
