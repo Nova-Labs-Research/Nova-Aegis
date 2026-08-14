@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-024 - Scoped task recovery reconciliation
+
+- **Phase:** 24
+- **Status:** Mitigated
+- **Severity:** Medium
+- **What changed:** Added explicit recovery reconciliation for `recovery_required` tasks. Resolution requires the original authenticated owner, operator role, `mcp:task:reconcile` scope, a valid terminal outcome, and a non-empty external receipt reference. Resolution stores evidence and does not replay the task handler.
+- **What broke or was discovered:** Phase 23 safely quarantined interrupted work but left no controlled way to document an externally confirmed outcome, causing permanent unresolved state or unsafe manual bypass pressure.
+- **Root cause:** Recovery handling had no distinct reconciliation authority, scope, or evidence contract.
+- **Fix applied or proposed:** Add scoped owner-bound reconciliation for `completed` or `abandoned` outcomes and audit both blocked and successful attempts. Return stored reconciliation evidence rather than execute again.
+- **Why this fix:** An interrupted action must be resolved by evidence and explicit authority, not by automatic retry or an unstructured override.
+- **Remaining risk:** Receipt references are caller-supplied and not independently verified; no delegated reviewer, dual approval, policy version, signature, external tool query, retention rule, immutable resolution history, or conflict handling exists.
+- **Refactor required:** Yes before consequential recovery or real worker deployment; no before the Phase 25 audit.
+- **Related controls:** High-level architecture Section 17, INV-HUMAN-001 through INV-HUMAN-003, INV-AUD-001 through INV-AUD-003, INV-ID-002, AUD20-002.
+- **Tests added:** Missing recovery scope, missing receipt, authorized reconciliation, durable reconciled state, reconciliation audit, and no handler replay.
+- **Tests still missing:** Independent receipt verification, delegated/dual approval, recovery policy versioning, conflicting receipt handling, external receipt query, and immutable audit history.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 25 audit or before real recovery integration.
+
 ### TD-023 - Durable local task recovery
 
 - **Phase:** 23

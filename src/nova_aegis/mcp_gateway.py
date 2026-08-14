@@ -71,6 +71,8 @@ class McpGatewayRequest:
 class McpGateway:
     """A synthetic server-side MCP boundary; it is not an OAuth or HTTP implementation."""
 
+    RECOVERY_SCOPE = "mcp:task:reconcile"
+
     def __init__(
         self,
         *,
@@ -201,6 +203,65 @@ class McpGateway:
             user_id=context.user_id,
         )
 
+    def resolve_recovery(
+        self,
+        *,
+        access_token: McpAccessToken,
+        task_state: McpTaskState,
+        resolution: str,
+        external_receipt_id: str,
+        result: Mapping[str, str] | None = None,
+    ) -> dict[str, Any]:
+        try:
+            context = self._validate_token(access_token)
+            self._validate_task_identity(task_state, context)
+            if context.role != "operator":
+                raise McpGatewayError("MCP task recovery requires the operator role")
+            if self.RECOVERY_SCOPE not in access_token.scopes:
+                raise McpGatewayError("MCP token lacks the recovery scope")
+            if resolution not in {"completed", "abandoned"}:
+                raise McpGatewayError("MCP task recovery resolution is invalid")
+            if not isinstance(external_receipt_id, str) or not external_receipt_id.strip():
+                raise McpGatewayError("MCP task recovery requires an external receipt reference")
+            if result is not None and any(
+                not isinstance(value, str) or not value.strip() for value in result.values()
+            ):
+                raise McpGatewayError("MCP task recovery result values must be non-empty strings")
+            with self._task_lock:
+                record = self._task_store.get(task_state.task_id)
+                if record is None or record.status != "recovery_required":
+                    raise McpGatewayError("MCP task is not awaiting recovery resolution")
+                reconciled_result = {
+                    "resolution": resolution,
+                    "external_receipt_id": external_receipt_id,
+                    **dict(result or {}),
+                }
+                self._task_store.update(
+                    task_state.task_id,
+                    status=f"reconciled_{resolution}",
+                    result=reconciled_result,
+                )
+            self._audit_log.append(
+                "mcp_task_reconciled",
+                task_id=task_state.task_id,
+                tool=task_state.tool_name,
+                user_id=context.user_id,
+                resolution=resolution,
+                external_receipt_id=external_receipt_id,
+            )
+            return {
+                "result": reconciled_result,
+                "assurance": AssuranceStatus.PASS.value,
+                "warning": None,
+            }
+        except (IdentityError, McpGatewayError, ValueError) as error:
+            self._audit_log.append(
+                "mcp_task_reconciliation_blocked",
+                task_id=getattr(task_state, "task_id", "unknown"),
+                reason=str(error),
+            )
+            return {"result": None, "assurance": AssuranceStatus.FAIL.value, "warning": str(error)}
+
     def task_status(self, task_state: McpTaskState) -> str:
         with self._task_lock:
             self._expire_tasks()
@@ -329,6 +390,18 @@ class McpGateway:
                     "assurance": AssuranceStatus.PASS.value,
                     "warning": "MCP task already completed; returning the stored result",
                 }
+            if record is not None and record.status == "reconciled_completed":
+                return {
+                    "result": dict(record.result or {}),
+                    "assurance": AssuranceStatus.PASS.value,
+                    "warning": "MCP task was reconciled from an external receipt",
+                }
+            if record is not None and record.status == "reconciled_abandoned":
+                return {
+                    "result": None,
+                    "assurance": AssuranceStatus.REVIEW.value,
+                    "warning": "MCP task was reconciled as abandoned; do not retry automatically",
+                }
             if task_id in self._inflight_tasks:
                 raise McpGatewayError("MCP task is already in progress")
             record = self._task_store.get(task_id)
@@ -399,7 +472,9 @@ class McpGateway:
 
     @property
     def _known_scopes(self) -> frozenset[str]:
-        return frozenset(descriptor.required_scope for descriptor in self._tools.values())
+        return frozenset(
+            {self.RECOVERY_SCOPE, *(descriptor.required_scope for descriptor in self._tools.values())}
+        )
 
     def _validate_token(self, token: McpAccessToken) -> AuthorizationContext:
         if not isinstance(token, McpAccessToken):

@@ -466,3 +466,66 @@ def test_interrupted_durable_task_requires_recovery_after_restart(tmp_path) -> N
     assert executions == []
     assert second_audit.events[-1]["event_type"] == "mcp_task_recovery_required"
     second_gateway.close()
+
+
+def test_recovery_resolution_requires_scope_receipt_and_never_replays_handler(tmp_path) -> None:
+    database = str(tmp_path / "tasks.db")
+    identity = IdentityAuthority(secret=b"recovery-resolution-identity-secret")
+    first_store = SQLiteTaskStore(database)
+    _, first_gateway, _, credential, _ = gateway_setup(
+        identity_authority=identity,
+        task_store=first_store,
+    )
+    task_token = issue_tool_token(first_gateway, credential)
+    request = stateless_request(first_gateway, task_token)
+    first_store.update(request.task_state.task_id, status="in_progress")
+    first_gateway.close()
+
+    second_store = SQLiteTaskStore(database)
+    _, second_gateway, audit, _, executions = gateway_setup(
+        identity_authority=identity,
+        task_store=second_store,
+    )
+    normal_token = issue_tool_token(second_gateway, credential)
+    missing_scope = second_gateway.resolve_recovery(
+        access_token=normal_token,
+        task_state=request.task_state,
+        resolution="completed",
+        external_receipt_id="external-001",
+    )
+    recovery_token = second_gateway.issue_token(
+        credential,
+        audience=RESOURCE_URI,
+        scopes=frozenset({SCOPE, second_gateway.RECOVERY_SCOPE}),
+    )
+    missing_receipt = second_gateway.resolve_recovery(
+        access_token=recovery_token,
+        task_state=request.task_state,
+        resolution="completed",
+        external_receipt_id="",
+    )
+    resolved = second_gateway.resolve_recovery(
+        access_token=recovery_token,
+        task_state=request.task_state,
+        resolution="completed",
+        external_receipt_id="external-001",
+        result={"status": "restart confirmed"},
+    )
+    replay = second_gateway.run_task(
+        access_token=normal_token,
+        headers={"Mcp-Method": "tools/call", "Mcp-Name": "synthetic_status_update"},
+        request=request,
+    )
+
+    assert missing_scope["assurance"] == "FAIL"
+    assert "recovery scope" in missing_scope["warning"]
+    assert missing_receipt["assurance"] == "FAIL"
+    assert "receipt reference" in missing_receipt["warning"]
+    assert resolved["assurance"] == "PASS"
+    assert second_gateway.task_status(request.task_state) == "reconciled_completed"
+    assert resolved["result"]["external_receipt_id"] == "external-001"
+    assert replay["assurance"] == "PASS"
+    assert replay["result"] == resolved["result"]
+    assert executions == []
+    assert audit.events[-1]["event_type"] == "mcp_task_reconciled"
+    second_gateway.close()

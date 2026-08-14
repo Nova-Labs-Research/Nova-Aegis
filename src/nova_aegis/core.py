@@ -377,6 +377,8 @@ class AuditLog:
             "mcp_task_started",
             "mcp_task_failed",
             "mcp_task_recovery_required",
+            "mcp_task_reconciled",
+            "mcp_task_reconciliation_blocked",
         }
     )
 
