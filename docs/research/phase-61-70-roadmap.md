@@ -38,7 +38,12 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 88 | Synthetic two-person rotation ceremony | Bound distinct proposer/approver authorization for key rotation | No organizational approval claim |
 | 89 | Synthetic deployment-boundary enforcement | Context, epoch, key-state, and approval-state consistency checks | No production enablement |
 | 90 | Mandatory audit | Review Phases 85-89 and all unresolved production blockers | Audit gate |
+| 91 | Nested synthetic boundary harness | Disposable inner/outer boundary with explicit capability manifest | No real containment claim |
+| 92 | Outcome validity and shortcut resistance | Exact synthetic success signal and alternate-path detection | No capability generalization claim |
+| 93 | Crash and destructive-failure semantics | Explicit failure receipts with no hidden retry or silent repair | No recovery assurance claim |
+| 94 | Persistence, scaling, and false-success evaluation | Bounded attempt/budget matrix and transcript outcome classification | No frontier capability claim |
+| 95 | Mandatory audit | Review Phases 90-94 and all unresolved production blockers | Audit gate |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
-Phase 95 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.
+Phase 100 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.
