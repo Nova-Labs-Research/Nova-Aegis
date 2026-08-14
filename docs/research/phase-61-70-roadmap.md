@@ -25,6 +25,7 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 75 | Mandatory audit | Review Phases 70-74 and all unresolved production blockers | Audit gate |
 | 76 | Enforceable boundary preflight | Fail-closed synthetic gate rejects blockers and every production request | No production enablement |
 | 77 | Signed boundary decisions | Tamper-evident synthetic preflight decisions bound to injected local keys | No policy authority claim |
+| 78 | Durable signed boundary replay | Append-only local SQLite persistence with exact report/key verification | No protected retention claim |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 

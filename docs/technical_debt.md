@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-078 - Durable signed boundary replay remains local
+
+- **Phase:** 78
+- **Status:** Adapted for local replay testing; protected policy retention remains blocked
+- **Severity:** High
+- **What changed:** Added append-only SQLite registration and revocation events for signed boundary decisions with exact report and key verification on replay.
+- **What broke or was discovered:** Close/reopen replay and malformed-state refusal work locally, but SQLite does not establish protected retention, power-loss durability, distributed policy consistency, or production enforcement.
+- **Root cause:** The store uses a local database and injected key provider without protected custody or a deployment control plane.
+- **Fix applied or proposed:** Keep replay fail closed and retain production hard-disabled; require protected retention and distributed policy controls before real enablement.
+- **Why this fix:** It extends auditability without presenting local persistence as authoritative governance.
+- **Remaining risk:** Local compromise, filesystem loss, replay divergence, and deployment bypass remain possible.
+- **Refactor required:** Yes before production boundary enablement.
+- **Related controls:** `docs/research/phase-78-durable-signed-boundary-replay.md`, AUD75-001, AUD75-003, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** SQLite close/reopen replay, conflict, revocation, unknown-key, and malformed-event tests.
+- **Tests still missing:** Protected retention, crash/power-loss recovery, distributed replay consistency, signed deployment enforcement, and policy conflict authority.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 80 mandatory audit or before any boundary expansion.
+
 ### TD-077 - Signed boundary decisions remain synthetic
 
 - **Phase:** 77

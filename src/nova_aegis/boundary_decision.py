@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import hashlib
 import hmac
 import json
+import sqlite3
 from typing import Any, Mapping, Protocol
 
 from .boundary_preflight import BoundaryPreflightReport
@@ -92,6 +93,102 @@ class SignedBoundaryDecision:
             raise BoundaryDecisionError("Boundary decision does not match preflight report")
         if self.production_enabled or self.decision == "CONTINUE_PRODUCTION":
             raise BoundaryDecisionError("Boundary decision cannot enable production")
+
+
+class SQLiteBoundaryDecisionStore:
+    """Append-only local decision events for synthetic replay experiments."""
+
+    def __init__(self, connection: sqlite3.Connection) -> None:
+        self._connection = connection
+        self._connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS boundary_decision_events (
+                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                boundary TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                payload TEXT NOT NULL
+            )
+            """
+        )
+        self._connection.commit()
+
+    def register(self, decision: SignedBoundaryDecision) -> None:
+        current = self._current(decision.boundary)
+        if current is not None and current != decision:
+            raise BoundaryDecisionError("Boundary decision has conflicting content")
+        if current == decision:
+            return
+        self._connection.execute(
+            "INSERT INTO boundary_decision_events(boundary, event_type, payload) VALUES (?, ?, ?)",
+            (decision.boundary, "register", _decision_payload(decision)),
+        )
+        self._connection.commit()
+
+    def revoke(self, boundary: str) -> None:
+        if self._current(boundary) is None:
+            raise BoundaryDecisionError("Boundary decision is not registered")
+        if self._is_revoked(boundary):
+            return
+        self._connection.execute(
+            "INSERT INTO boundary_decision_events(boundary, event_type, payload) VALUES (?, ?, ?)",
+            (boundary, "revoke", "{}"),
+        )
+        self._connection.commit()
+
+    def replay(
+        self,
+        boundary: str,
+        report: BoundaryPreflightReport,
+        key_provider: BoundaryDecisionKeyProvider,
+    ) -> SignedBoundaryDecision:
+        decision = self._current(boundary)
+        if decision is None:
+            raise BoundaryDecisionError("Boundary decision is not registered")
+        if self._is_revoked(boundary):
+            raise BoundaryDecisionError("Boundary decision is revoked")
+        decision.verify(report, key_provider)
+        return decision
+
+    def _current(self, boundary: str) -> SignedBoundaryDecision | None:
+        rows = self._connection.execute(
+            "SELECT event_type, payload FROM boundary_decision_events WHERE boundary = ? ORDER BY event_id",
+            (boundary,),
+        ).fetchall()
+        current: SignedBoundaryDecision | None = None
+        for event_type, payload in rows:
+            if event_type == "register":
+                current = _decision_from_payload(payload)
+        return current
+
+    def _is_revoked(self, boundary: str) -> bool:
+        row = self._connection.execute(
+            "SELECT 1 FROM boundary_decision_events WHERE boundary = ? AND event_type = 'revoke' LIMIT 1",
+            (boundary,),
+        ).fetchone()
+        return row is not None
+
+
+def _decision_payload(decision: SignedBoundaryDecision) -> str:
+    return json.dumps(
+        {**decision.payload(), "signature": decision.signature},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _decision_from_payload(payload: str) -> SignedBoundaryDecision:
+    try:
+        value = json.loads(payload)
+        return SignedBoundaryDecision(
+            boundary=str(value["boundary"]),
+            decision=str(value["decision"]),
+            blockers=tuple(str(blocker) for blocker in value["blockers"]),
+            production_enabled=bool(value["production_enabled"]),
+            key_id=str(value["key_id"]),
+            signature=str(value["signature"]),
+        )
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise BoundaryDecisionError("Boundary decision event is malformed") from error
 
 
 def _sign(payload: Mapping[str, Any], secret: bytes) -> str:

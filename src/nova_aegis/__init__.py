@@ -70,6 +70,7 @@ from .boundary_preflight import (
 from .boundary_decision import (
     BoundaryDecisionError,
     SignedBoundaryDecision,
+    SQLiteBoundaryDecisionStore,
 )
 from .receipt_witness import (
     LocalReceiptWitness,
@@ -141,6 +142,7 @@ __all__ = [
     "BoundaryGateError",
     "BoundaryDecisionError",
     "SignedBoundaryDecision",
+    "SQLiteBoundaryDecisionStore",
     "SyntheticBoundaryPreflight",
     "LocalReceiptWitness",
     "ReceiptWitnessAttestation",
