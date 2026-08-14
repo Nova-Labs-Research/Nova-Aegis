@@ -27,7 +27,8 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 77 | Signed boundary decisions | Tamper-evident synthetic preflight decisions bound to injected local keys | No policy authority claim |
 | 78 | Durable signed boundary replay | Append-only local SQLite persistence with exact report/key verification | No protected retention claim |
 | 79 | Decision revocation and supersession | Terminal revocation and same-boundary signed successor replay | No policy authority claim |
+| 80 | Mandatory audit | Review Phases 75-79 and all unresolved production blockers | Audit gate |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
-Phase 80 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.
+Phase 85 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.

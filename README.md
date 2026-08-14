@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 75](docs/audits/phase-75-audit.md), with Phases 76-79 continuing synthetic research. The latest full validation reports 133 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
+The current audit gate is [Phase 80](docs/audits/phase-80-audit.md), with the project continuing synthetic research. The latest full validation reports 133 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
 
 ## Documents
 
@@ -81,6 +81,7 @@ The current audit gate is [Phase 75](docs/audits/phase-75-audit.md), with Phases
 - [Phase 65 audit](docs/audits/phase-65-audit.md)
 - [Phase 70 audit](docs/audits/phase-70-audit.md)
 - [Phase 75 audit](docs/audits/phase-75-audit.md)
+- [Phase 80 audit](docs/audits/phase-80-audit.md)
 - [Conceptual heritage](references/conceptual_heritage.md)
 - [Canonical flow](architecture/diagrams/canonical-flow.md)
 

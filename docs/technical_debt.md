@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-080 - Phase 80 mandatory audit findings
+
+- **Phase:** 80
+- **Status:** Accepted for synthetic-only research; production blockers remain
+- **Severity:** High
+- **What changed:** Audited Phases 75-79, including enforceable preflight, signed decisions, durable replay, revocation, and supersession.
+- **What broke or was discovered:** No Critical synthetic defect was found. Local controls improve fail-closed behavior but do not establish protected policy authority, independent evidence, protected retention, distributed ordering, or deployment enforcement.
+- **Root cause:** The implementation remains bounded to injected local keys, one SQLite event store, and process-local governance decisions.
+- **Fix applied or proposed:** Continue synthetic-only research; retain High blockers for protected authority, external evidence, distributed durability, and networked deployment.
+- **Why this fix:** It preserves human authority and prevents local integrity signals from becoming production authorization.
+- **Remaining risk:** Local compromise, filesystem loss, power-loss, split-brain ordering, external conflict, and deployment bypass remain possible.
+- **Refactor required:** Yes before real integrations, consequential recovery, distributed policy, independent evidence, or networked MCP.
+- **Related controls:** `docs/audits/phase-80-audit.md`, AUD80-001 through AUD80-005, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Phase 76-79 focused enforcement, signing, replay, revocation, and supersession tests; full 133-test regression passed.
+- **Tests still missing:** Protected policy authority, crash/failover, distributed ordering, immutable retention, independent evidence, network transport, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 85 mandatory audit or before any boundary expansion.
+
 ### TD-079 - Decision lifecycle remains locally ordered
 
 - **Phase:** 79
