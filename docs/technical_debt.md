@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-092 - Synthetic success requires independent boundary evidence
+
+- **Phase:** 92
+- **Status:** Mitigated for local synthetic outcome review; generalized evaluation remains blocked
+- **Severity:** High
+- **What changed:** Added an immutable transcript reviewer that accepts exactly one matching boundary-originated goal signal.
+- **What broke or was discovered:** A boolean success report alone cannot distinguish an actual boundary signal from subject self-attestation, fixture leakage, evaluator shortcuts, alternate paths, or malformed event order.
+- **Root cause:** Outcome validity was not represented as an independent event-level contract.
+- **Fix applied or proposed:** Add `SyntheticOutcomeReviewer` with exact goal matching, source restrictions, shortcut detection, and fail-closed transcript validation.
+- **Why this fix:** It makes the Phase 92 success criterion deterministic and auditable without trusting the subject or evaluator to declare success.
+- **Remaining risk:** Events are still process-local and caller-supplied; this does not prove independence, prevent a compromised host from fabricating events, or generalize to real agents or sandboxes.
+- **Refactor required:** Yes before live semantic evaluation, real containment, or capability claims.
+- **Related controls:** `docs/research/phase-92-outcome-validity.md`, TD-091, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Five focused tests for exact success, self-report refusal, fixture/evaluator shortcut refusal, wrong/missing/duplicate signals, and ambiguous sequence refusal.
+- **Tests still missing:** Durable append-only transcript storage, independent witness verification, crash semantics, repeated-attempt accounting, and real deployment-boundary enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 95 mandatory audit or before any boundary expansion.
+
 ### TD-091 - Synthetic boundary is a contract simulator
 
 - **Phase:** 91

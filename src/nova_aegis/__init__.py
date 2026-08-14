@@ -103,6 +103,13 @@ from .synthetic_boundary import (
     SyntheticBoundaryResult,
     SyntheticNestedBoundary,
 )
+from .outcome_validity import (
+    SyntheticGoalSignal,
+    SyntheticOutcomeError,
+    SyntheticOutcomeReview,
+    SyntheticOutcomeReviewer,
+    SyntheticTranscriptEvent,
+)
 
 __all__ = [
     "AgentK",
@@ -184,6 +191,11 @@ __all__ = [
     "SyntheticBoundaryManifest",
     "SyntheticBoundaryResult",
     "SyntheticNestedBoundary",
+    "SyntheticGoalSignal",
+    "SyntheticOutcomeError",
+    "SyntheticOutcomeReview",
+    "SyntheticOutcomeReviewer",
+    "SyntheticTranscriptEvent",
     "TaskRecord",
     "ExternalExecutionReceipt",
     "ExternalReceiptError",
