@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-090 - Phase 90 mandatory audit findings
+
+- **Phase:** 90
+- **Status:** Accepted for synthetic-only research; production blockers remain
+- **Severity:** High
+- **What changed:** Audited Phase 85 and reviewed the bounded Phase 86-89 roadmap for durable key replay, lifecycle integrity, two-person rotation, and deployment-boundary enforcement.
+- **What broke or was discovered:** No Critical synthetic defect was found. Phases 86-89 are planning entries only; they do not yet provide implementation evidence or reduce the protected authority, custody, retention, distributed ordering, or deployment blockers.
+- **Root cause:** The current system remains local, injected, and process-controlled, with no protected deployment control plane.
+- **Fix applied or proposed:** Approve the roadmap as synthetic research only; implement each phase separately with adversarial tests and retain production hard-disable.
+- **Why this fix:** It prevents roadmap intent or local integrity metadata from being misrepresented as authorization or readiness.
+- **Remaining risk:** Local compromise, filesystem loss or tampering, stale lifecycle state, caller-controlled authority, distributed disagreement, and deployment bypass remain possible.
+- **Refactor required:** Yes before real integrations, consequential recovery, independent evidence, distributed policy, or networked MCP.
+- **Related controls:** `docs/audits/phase-90-audit.md`, `docs/research/phase-86-89-roadmap.md`, AUD90-001 through AUD90-005, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** No implementation tests; audit revalidated the 143-test suite and current synthetic controls.
+- **Tests still missing:** All implementation evidence specified for Phases 86-89, plus protected identity/custody, immutable retention, crash/failover, distributed ordering, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 95 mandatory audit or before any boundary expansion.
+
 ### TD-085 - Phase 85 mandatory audit findings
 
 - **Phase:** 85

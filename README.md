@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 85](docs/audits/phase-85-audit.md), with the project continuing synthetic research. The latest full validation reports 143 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
+The current audit gate is [Phase 90](docs/audits/phase-90-audit.md), with the project continuing synthetic research. The latest full validation reports 143 passing tests; compilation and diff integrity checks also pass. Synthetic work may continue, while protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, and consequential tools remain blocked pending their documented controls.
 
 ## Documents
 
@@ -83,6 +83,7 @@ The current audit gate is [Phase 85](docs/audits/phase-85-audit.md), with the pr
 - [Phase 75 audit](docs/audits/phase-75-audit.md)
 - [Phase 80 audit](docs/audits/phase-80-audit.md)
 - [Phase 85 audit](docs/audits/phase-85-audit.md)
+- [Phase 90 audit](docs/audits/phase-90-audit.md)
 - [Phases 86-89 roadmap](docs/research/phase-86-89-roadmap.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)

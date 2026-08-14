@@ -37,7 +37,8 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 87 | Synthetic lifecycle integrity | Corruption and contradiction refusal for identity/key events | No immutable-retention claim |
 | 88 | Synthetic two-person rotation ceremony | Bound distinct proposer/approver authorization for key rotation | No organizational approval claim |
 | 89 | Synthetic deployment-boundary enforcement | Context, epoch, key-state, and approval-state consistency checks | No production enablement |
+| 90 | Mandatory audit | Review Phases 85-89 and all unresolved production blockers | Audit gate |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
-Phase 90 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.
+Phase 95 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review.
