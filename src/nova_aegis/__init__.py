@@ -62,6 +62,7 @@ from .key_provider import JournalKeyProvider, LocalJournalKeyProvider
 from .corpus_manifest import CorpusManifest, ManifestKeyProvider, calculate_corpus_digest
 from .corpus_snapshot import CorpusSnapshot
 from .transport_envelope import SyntheticTransportEnvelope
+from .receipt_witness import LocalReceiptWitness, ReceiptWitnessAttestation, digest_receipt
 from .reliability_memory import (
     LocalReliabilityMemory,
     ReliabilityRecord,
@@ -120,6 +121,9 @@ __all__ = [
     "calculate_corpus_digest",
     "CorpusSnapshot",
     "SyntheticTransportEnvelope",
+    "LocalReceiptWitness",
+    "ReceiptWitnessAttestation",
+    "digest_receipt",
     "LocalReliabilityMemory",
     "ReliabilityRecord",
     "RoutingDecision",

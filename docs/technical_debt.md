@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-071 - Synthetic receipt witness remains non-independent
+
+- **Phase:** 71
+- **Status:** Adapted for local separation testing; independent evidence remains blocked
+- **Severity:** High
+- **What changed:** Added a separate local receipt witness that signs and verifies a canonical receipt digest.
+- **What broke or was discovered:** Separating issuer and witness identities catches self-witnessing, tampering, and key mismatch, but caller-supplied labels and injected local keys do not establish actual independence.
+- **Root cause:** The experiment has no protected organizational identity, public-key trust root, durable witness log, or external system boundary.
+- **Fix applied or proposed:** Keep the witness contract fail-closed and synthetic; require protected identity, durable retention, revocation distribution, and independent deployment before using witness attestations as evidence.
+- **Why this fix:** It tests the minimum separation invariant without turning a local second key into proof that an external action occurred.
+- **Remaining risk:** A compromised local process can forge issuer and witness state, lose attestations, or present synthetic evidence as external fact.
+- **Refactor required:** Yes before consequential recovery, external evidence, or networked MCP.
+- **Related controls:** `docs/research/phase-71-independent-receipt-witness.md`, AUD70-001, INV-FAIL-002, INV-HUMAN-001 through INV-HUMAN-003, INV-MCP-001 through INV-MCP-004.
+- **Tests added:** Separate witness success, self-witness rejection, receipt tampering rejection, and alternate-key rejection.
+- **Tests still missing:** Protected identity, public-key trust, durable witness retention, revocation distribution, conflict arbitration, and deployment isolation.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 75 mandatory audit or before any boundary expansion.
+
 ### TD-070 - Phase 70 mandatory audit findings
 
 - **Phase:** 70
