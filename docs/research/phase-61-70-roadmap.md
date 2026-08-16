@@ -49,9 +49,9 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 | 96 | Authenticated synthetic evidence boundary | Authenticated append-only evidence and corruption refusal | Implemented locally; no protected authority claim |
 | 97 | Independent synthetic witness | Distinct witness verification and conflict refusal | Implemented locally; no independent external evidence claim |
 | 98 | Bounded workload coordination | Explicit local ownership, budgets, and no hidden retry | Implemented locally; no distributed reliability claim |
-| 99 | Pre-production boundary review | Review-only integration boundary and blocker checklist | Planned; no production enablement |
-| 100 | Mandatory audit and freeze review | Review Phases 95-99 and decide whether to reopen scope | Future audit gate |
+| 99 | Pre-production boundary review | Review-only integration boundary and blocker checklist | Completed review-only; `BLOCKED` |
+| 100 | Mandatory audit and gate review | Review Phases 95-99 and decide whether to reopen scope | Completed; `CONTINUE_SYNTHETIC`, pre-production `BLOCKED` |
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
-Phase 100 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review. On 2026-08-16, the project owner clarified that the freeze was a weekend break and unfroze continued roadmap work. Phases 96-98 are implemented; Phase 99 remains review-only and Phase 100 remains the mandatory audit.
+Phase 100 completed the mandatory audit on 2026-08-16. The next mandatory checkpoint is Phase 105 if a bounded Phase 101-104 roadmap is approved, or earlier if a boundary expands or an invariant/security event occurs. The gate permits synthetic remediation and planning only; pre-production integration remains blocked.

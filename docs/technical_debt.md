@@ -39,6 +39,42 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-100 - Phase 100 retains confirmed evidence, witness, and budget gaps
+
+- **Phase:** 100
+- **Status:** Accepted for bounded synthetic remediation; pre-production blocked
+- **Severity:** High
+- **What changed:** Audited Phases 95-99, ran the 183-test regression, reviewed invariants and threat boundaries, and issued an explicit gate decision.
+- **What broke or was discovered:** Tail/full evidence deletion can evade chain replay, witnesses can sign caller-constructed unverified records, and workload budgets are metadata rather than enforced limits.
+- **Root cause:** Local chain state lacks an external anchor, witness attestation does not own evidence retrieval, and the coordinator does not execute or meter work.
+- **Fix applied or proposed:** Track AUD100-001 through AUD100-003 as named blockers; require anchored evidence, witness-owned replay, and metered execution before stronger claims.
+- **Why this fix:** It prevents passing synthetic tests and local metadata from being misrepresented as completeness, independence, budget enforcement, or readiness.
+- **Remaining risk:** All Phase 99 deployment blockers remain unresolved, including custody, retention, identity, trusted time, concurrency, fencing, transport, data governance, recovery, and consequential-action controls.
+- **Refactor required:** Yes before any real integration or pre-production boundary.
+- **Related controls:** `docs/audits/phase-100-audit.md`, `docs/research/phase-99-pre-production-boundary-review.md`, AUD100-001 through AUD100-008, INV-FAIL-002, INV-AUD-001 through INV-AUD-003, INV-HUMAN-001 through INV-HUMAN-003.
+- **Tests added:** No implementation tests in the audit; the complete 183-test suite passed.
+- **Tests still missing:** Tail/full deletion detection, forged pre-attestation evidence refusal, strict canonical JSON, authenticated witness history, concurrency, durable leases, trusted time, enforced budgets, protected custody, and deployment controls.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 105 audit or before any boundary expansion.
+
+### TD-099 - Pre-production boundary remains blocked
+
+- **Phase:** 99
+- **Status:** Blocked
+- **Severity:** High
+- **What changed:** Defined typed review outcomes, an exact integration interface contract, threat-model delta, human approval binding, rollback/refusal plan, and deployment blocker checklist.
+- **What broke or was discovered:** No concrete deployment target, protected evidence, independent authority, trusted coordination, exact approval, or completed deployment control exists.
+- **Root cause:** Phases 96-98 are local synthetic experiments rather than an enforceable integration control plane.
+- **Fix applied or proposed:** Return `BLOCKED`, preserve default deny, and require every checklist item to be independently verified before reconsideration.
+- **Why this fix:** Review artifacts must not silently become credentials, authority, readiness evidence, or deployment permission.
+- **Remaining risk:** Every listed deployment blocker remains unresolved.
+- **Refactor required:** Yes before any pre-production integration.
+- **Related controls:** `docs/research/phase-99-pre-production-boundary-review.md`, AUD95-001 through AUD95-005, TD-096 through TD-098, INV-AUTH-001 through INV-AUTH-003, INV-HUMAN-001 through INV-HUMAN-003.
+- **Tests added:** None; Phase 99 is review-only.
+- **Tests still missing:** All enforceable deployment, rollback, identity, custody, retention, network, data, worker, and consequential-action controls.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 100 audit and before any integration request.
+
 ### TD-098 - Local workload leases are not distributed authority
 
 - **Phase:** 98
