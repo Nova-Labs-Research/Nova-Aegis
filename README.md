@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 95](docs/audits/phase-95-audit.md). Phases 96-97 were explicitly reopened for authenticated local evidence and synthetic witness separation; Phases 98-100 remain frozen pending separate human review. The latest full validation reports 177 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
+The current audit gate is [Phase 95](docs/audits/phase-95-audit.md). The project owner clarified that its freeze was a weekend break and authorized continued synthetic roadmap work; Phases 96-98 are now implemented, Phase 99 remains review-only, and Phase 100 remains the mandatory audit. The latest full validation reports 183 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
 
 ## Documents
 
@@ -91,9 +91,10 @@ The current audit gate is [Phase 95](docs/audits/phase-95-audit.md). Phases 96-9
 - [Phase 92 outcome validity research](docs/research/phase-92-outcome-validity.md)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 94 scaling evaluation research](docs/research/phase-94-scaling-evaluation.md)
-- [Phases 96-100 frozen roadmap](docs/research/phase-96-100-roadmap.md)
+- [Phases 96-100 roadmap](docs/research/phase-96-100-roadmap.md)
 - [Phase 96 authenticated synthetic evidence research](docs/research/phase-96-protected-synthetic-evidence.md)
 - [Phase 97 independent synthetic witness research](docs/research/phase-97-independent-synthetic-witness.md)
+- [Phase 98 bounded workload coordination research](docs/research/phase-98-bounded-workload-coordination.md)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)

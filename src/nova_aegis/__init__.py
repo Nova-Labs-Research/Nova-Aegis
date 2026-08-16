@@ -136,6 +136,13 @@ from .evidence_witness import (
     SyntheticEvidenceWitnessDecision,
     SyntheticEvidenceWitnessError,
 )
+from .workload_coordination import (
+    SyntheticCoordinationError,
+    SyntheticWorkItem,
+    SyntheticWorkLease,
+    SyntheticWorkReceipt,
+    SyntheticWorkloadCoordinator,
+)
 
 __all__ = [
     "AgentK",
@@ -240,6 +247,11 @@ __all__ = [
     "SyntheticEvidenceWitnessAttestation",
     "SyntheticEvidenceWitnessDecision",
     "SyntheticEvidenceWitnessError",
+    "SyntheticCoordinationError",
+    "SyntheticWorkItem",
+    "SyntheticWorkLease",
+    "SyntheticWorkReceipt",
+    "SyntheticWorkloadCoordinator",
     "TaskRecord",
     "ExternalExecutionReceipt",
     "ExternalReceiptError",

@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-098 - Local workload leases are not distributed authority
+
+- **Phase:** 98
+- **Status:** Mitigated for bounded local coordination; distributed reliability remains blocked
+- **Severity:** High
+- **What changed:** Added deterministic attempt ordering, bounded active leases, worker ownership, fencing tokens, explicit lease expiry, terminal crash/timeout receipts, and replay refusal.
+- **What broke or was discovered:** Fixed-budget evaluation cases lacked a dedicated ownership lifecycle and could not distinguish explicit terminal expiry from implicit retry or requeue behavior.
+- **Root cause:** Phase 94 measured attempts but did not coordinate local worker ownership or terminal lease state.
+- **Fix applied or proposed:** Add `SyntheticWorkloadCoordinator` with one-claim attempt semantics and immutable terminal receipts.
+- **Why this fix:** It makes local scheduling and ownership deterministic without adding networking, automatic recovery, or consequential execution.
+- **Remaining risk:** State is process-local; time is caller-supplied; fencing is not enforced externally; process loss, concurrent mutation, distributed ownership, and failover are unproven.
+- **Refactor required:** Yes before real workers, distributed coordination, trusted scheduling, or production recovery.
+- **Related controls:** `docs/research/phase-98-bounded-workload-coordination.md`, AUD95-001 through AUD95-005, TD-093, TD-094, TD-096, TD-097, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Six focused tests for deterministic scheduling, parallelism bounds, ownership/fencing, terminal receipts, crash/timeout separation, expiry, no replay/requeue, and invalid configuration.
+- **Tests still missing:** Durable coordination, real concurrency, trusted time, external fencing enforcement, process crash recovery, distributed ordering, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 100 mandatory audit or before any real worker integration.
+
 ### TD-097 - Synthetic witness separation is not compromise independence
 
 - **Phase:** 97
