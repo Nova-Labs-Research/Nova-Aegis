@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 100](docs/audits/phase-100-audit.md). It permits bounded synthetic remediation and future roadmap planning while keeping pre-production integration `BLOCKED`. Phase 99 completed a review-only boundary assessment; no production capability was added. The latest full validation reports 183 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, independently anchored evidence, independent witness authority, enforced budgets, distributed recovery, trusted coordination, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
+The current audit gate is [Phase 100](docs/audits/phase-100-audit.md). Phases 101-103 implement bounded local remediation for signed evidence anchors, witness-owned anchored replay, and signed pre-operation budget debits. Phase 104 is architecture-only and requires a concrete protected deployment platform. The latest full validation reports 196 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, immutable external retention, independent witness authority, distributed recovery, trusted coordination, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
 
 ## Documents
 
@@ -97,6 +97,11 @@ The current audit gate is [Phase 100](docs/audits/phase-100-audit.md). It permit
 - [Phase 97 independent synthetic witness research](docs/research/phase-97-independent-synthetic-witness.md)
 - [Phase 98 bounded workload coordination research](docs/research/phase-98-bounded-workload-coordination.md)
 - [Phase 99 pre-production boundary review](docs/research/phase-99-pre-production-boundary-review.md)
+- [Phases 101-105 roadmap](docs/research/phase-101-105-roadmap.md)
+- [Phase 101 signed evidence anchoring research](docs/research/phase-101-evidence-anchoring.md)
+- [Phase 102 witness-owned verification research](docs/research/phase-102-witness-owned-verification.md)
+- [Phase 103 enforced synthetic budgets research](docs/research/phase-103-enforced-synthetic-budgets.md)
+- [Phase 104 protected deployment architecture](docs/research/phase-104-protected-deployment-architecture.md)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)

@@ -5,6 +5,7 @@ from dataclasses import replace
 import pytest
 
 from nova_aegis import (
+    LocalJournalKeyProvider,
     SyntheticCoordinationError,
     SyntheticWorkItem,
     SyntheticWorkloadCoordinator,
@@ -20,6 +21,7 @@ def _coordinator(*, max_parallelism: int = 2) -> SyntheticWorkloadCoordinator:
         ),
         max_parallelism=max_parallelism,
         lease_seconds=5,
+        budget_key_provider=LocalJournalKeyProvider({"budget-key": b"budget-secret"}),
     )
 
 
@@ -94,11 +96,26 @@ def test_expired_lease_requires_explicit_timeout_receipt() -> None:
 def test_invalid_bounds_duplicate_attempts_and_outcomes_fail_closed() -> None:
     item = SyntheticWorkItem("attempt-a", 1, 1)
     with pytest.raises(ValueError, match="positive"):
-        SyntheticWorkloadCoordinator((item,), max_parallelism=0, lease_seconds=1)
+        SyntheticWorkloadCoordinator(
+            (item,),
+            max_parallelism=0,
+            lease_seconds=1,
+            budget_key_provider=LocalJournalKeyProvider(),
+        )
     with pytest.raises(ValueError, match="unique"):
-        SyntheticWorkloadCoordinator((item, item), max_parallelism=1, lease_seconds=1)
+        SyntheticWorkloadCoordinator(
+            (item, item),
+            max_parallelism=1,
+            lease_seconds=1,
+            budget_key_provider=LocalJournalKeyProvider(),
+        )
 
-    coordinator = SyntheticWorkloadCoordinator((item,), max_parallelism=1, lease_seconds=1)
+    coordinator = SyntheticWorkloadCoordinator(
+        (item,),
+        max_parallelism=1,
+        lease_seconds=1,
+        budget_key_provider=LocalJournalKeyProvider({"budget-key": b"budget-secret"}),
+    )
     lease = coordinator.claim("worker-a", now=0)
     assert lease is not None
     with pytest.raises(ValueError, match="outcome"):

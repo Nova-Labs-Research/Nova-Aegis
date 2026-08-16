@@ -9,7 +9,7 @@ import json
 import sqlite3
 from typing import Mapping
 
-from .evidence_store import SyntheticEvidenceRecord
+from .evidence_anchor import AnchoredSQLiteSyntheticEvidenceStore
 
 
 class SyntheticEvidenceWitnessError(RuntimeError):
@@ -22,6 +22,10 @@ class SyntheticEvidenceWitnessAttestation:
     evidence_sequence: int
     evidence_type: str
     evidence_digest: str
+    store_id: str
+    anchor_event_count: int
+    anchor_terminal_digest: str
+    anchor_signature: str
     evaluator_id: str
     witness_id: str
     signature: str
@@ -32,6 +36,10 @@ class SyntheticEvidenceWitnessAttestation:
             "evidence_sequence": self.evidence_sequence,
             "evidence_type": self.evidence_type,
             "evidence_digest": self.evidence_digest,
+            "store_id": self.store_id,
+            "anchor_event_count": self.anchor_event_count,
+            "anchor_terminal_digest": self.anchor_terminal_digest,
+            "anchor_signature": self.anchor_signature,
             "evaluator_id": self.evaluator_id,
             "witness_id": self.witness_id,
         }
@@ -56,19 +64,25 @@ class LocalSyntheticEvidenceWitness:
 
     def attest(
         self,
-        record: SyntheticEvidenceRecord,
+        evidence_id: str,
         *,
+        evidence_store: AnchoredSQLiteSyntheticEvidenceStore,
         evaluator_id: str,
     ) -> SyntheticEvidenceWitnessAttestation:
         if not evaluator_id.strip():
             raise ValueError("Synthetic evidence evaluator identity is required")
         if evaluator_id == self.witness_id:
             raise SyntheticEvidenceWitnessError("Evaluator and witness must be distinct")
+        record, anchor = evidence_store.get_verified(evidence_id)
         unsigned = SyntheticEvidenceWitnessAttestation(
             record.evidence_id,
             record.sequence,
             record.evidence_type,
             record.digest,
+            evidence_store.store_id,
+            anchor.event_count,
+            anchor.terminal_digest,
+            anchor.signature,
             evaluator_id,
             self.witness_id,
             "",
@@ -86,15 +100,20 @@ class LocalSyntheticEvidenceWitness:
     def verify(
         self,
         attestation: SyntheticEvidenceWitnessAttestation,
-        record: SyntheticEvidenceRecord,
         *,
+        evidence_store: AnchoredSQLiteSyntheticEvidenceStore,
         evaluator_id: str,
     ) -> None:
+        record, anchor = evidence_store.get_verified(attestation.evidence_id)
         expected_fields = (
             record.evidence_id,
             record.sequence,
             record.evidence_type,
             record.digest,
+            evidence_store.store_id,
+            anchor.event_count,
+            anchor.terminal_digest,
+            anchor.signature,
             evaluator_id,
             self.witness_id,
         )
@@ -103,6 +122,10 @@ class LocalSyntheticEvidenceWitness:
             attestation.evidence_sequence,
             attestation.evidence_type,
             attestation.evidence_digest,
+            attestation.store_id,
+            attestation.anchor_event_count,
+            attestation.anchor_terminal_digest,
+            attestation.anchor_signature,
             attestation.evaluator_id,
             attestation.witness_id,
         )
@@ -124,10 +147,11 @@ class SyntheticEvidenceWitnessArbiter:
 
     def decide(
         self,
-        record: SyntheticEvidenceRecord,
+        evidence_id: str,
         attestations: tuple[SyntheticEvidenceWitnessAttestation, ...],
         witnesses: Mapping[str, LocalSyntheticEvidenceWitness],
         *,
+        evidence_store: AnchoredSQLiteSyntheticEvidenceStore,
         evaluator_id: str,
         minimum_witnesses: int = 2,
     ) -> SyntheticEvidenceWitnessDecision:
@@ -140,12 +164,18 @@ class SyntheticEvidenceWitnessArbiter:
                 raise SyntheticEvidenceWitnessError("Synthetic evidence witness is unknown")
             if attestation.witness_id in verified:
                 raise SyntheticEvidenceWitnessError("Synthetic evidence witness quorum contains a duplicate")
-            witness.verify(attestation, record, evaluator_id=evaluator_id)
+            if attestation.evidence_id != evidence_id:
+                raise SyntheticEvidenceWitnessError("Synthetic evidence witness binding is invalid")
+            witness.verify(
+                attestation,
+                evidence_store=evidence_store,
+                evaluator_id=evaluator_id,
+            )
             verified.append(attestation.witness_id)
         if len(verified) < minimum_witnesses:
             raise SyntheticEvidenceWitnessError("Synthetic evidence witness quorum is insufficient")
         return SyntheticEvidenceWitnessDecision(
-            record.evidence_id,
+            evidence_id,
             tuple(sorted(verified)),
             minimum_witnesses,
         )
@@ -231,6 +261,10 @@ def _attestation_from_payload(payload: str) -> SyntheticEvidenceWitnessAttestati
             evidence_sequence=int(value["evidence_sequence"]),
             evidence_type=str(value["evidence_type"]),
             evidence_digest=str(value["evidence_digest"]),
+            store_id=str(value["store_id"]),
+            anchor_event_count=int(value["anchor_event_count"]),
+            anchor_terminal_digest=str(value["anchor_terminal_digest"]),
+            anchor_signature=str(value["anchor_signature"]),
             evaluator_id=str(value["evaluator_id"]),
             witness_id=str(value["witness_id"]),
             signature=str(value["signature"]),

@@ -55,3 +55,9 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
 Phase 100 completed the mandatory audit on 2026-08-16. The next mandatory checkpoint is Phase 105 if a bounded Phase 101-104 roadmap is approved, or earlier if a boundary expands or an invariant/security event occurs. The gate permits synthetic remediation and planning only; pre-production integration remains blocked.
+
+| 101 | Signed evidence anchoring | Separate signed terminal checkpoints and truncation refusal | Implemented locally; no immutable-retention claim |
+| 102 | Witness-owned anchored verification | Witness replay by evidence ID with anchor binding | Implemented locally; no independent-authority claim |
+| 103 | Enforced synthetic budgets | Signed pre-operation debit and hard exhaustion | Implemented locally; no external-execution claim |
+| 104 | Protected deployment architecture | Custody, retention, identity, coordination, gateway, and deployment plan | Mapped only; `REFACTOR` required |
+| 105 | Mandatory audit | Review Phases 100-104 and all unresolved blockers | Future audit gate |

@@ -128,6 +128,12 @@ from .evidence_store import (
     SyntheticEvidenceKeyProvider,
     SyntheticEvidenceRecord,
 )
+from .evidence_anchor import (
+    AnchoredSQLiteSyntheticEvidenceStore,
+    SignedSyntheticEvidenceAnchor,
+    SQLiteSyntheticEvidenceAnchorStore,
+    SyntheticEvidenceAnchorError,
+)
 from .evidence_witness import (
     LocalSyntheticEvidenceWitness,
     SQLiteSyntheticEvidenceWitnessStore,
@@ -137,6 +143,8 @@ from .evidence_witness import (
     SyntheticEvidenceWitnessError,
 )
 from .workload_coordination import (
+    SyntheticBudgetKeyProvider,
+    SyntheticBudgetUsageReceipt,
     SyntheticCoordinationError,
     SyntheticWorkItem,
     SyntheticWorkLease,
@@ -241,6 +249,10 @@ __all__ = [
     "SyntheticEvidenceError",
     "SyntheticEvidenceKeyProvider",
     "SyntheticEvidenceRecord",
+    "AnchoredSQLiteSyntheticEvidenceStore",
+    "SignedSyntheticEvidenceAnchor",
+    "SQLiteSyntheticEvidenceAnchorStore",
+    "SyntheticEvidenceAnchorError",
     "LocalSyntheticEvidenceWitness",
     "SQLiteSyntheticEvidenceWitnessStore",
     "SyntheticEvidenceWitnessArbiter",
@@ -248,6 +260,8 @@ __all__ = [
     "SyntheticEvidenceWitnessDecision",
     "SyntheticEvidenceWitnessError",
     "SyntheticCoordinationError",
+    "SyntheticBudgetKeyProvider",
+    "SyntheticBudgetUsageReceipt",
     "SyntheticWorkItem",
     "SyntheticWorkLease",
     "SyntheticWorkReceipt",

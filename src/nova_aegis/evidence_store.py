@@ -171,7 +171,12 @@ class SQLiteSyntheticEvidenceStore:
 
 def _canonical_payload(payload: Mapping[str, Any]) -> str:
     try:
-        return json.dumps(dict(payload), sort_keys=True, separators=(",", ":"))
+        return json.dumps(
+            dict(payload),
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
     except (TypeError, ValueError) as error:
         raise ValueError("Synthetic evidence payload must be canonical JSON") from error
 

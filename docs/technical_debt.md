@@ -39,6 +39,78 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-104 - Protected deployment controls require a concrete platform
+
+- **Phase:** 104
+- **Status:** Blocked pending platform and operational decisions
+- **Severity:** High
+- **What changed:** Mapped an offline-first architecture for protected custody, independent retention and witness authority, durable coordination, permit enforcement, signed deployment, and rollback.
+- **What broke or was discovered:** Process-local simulations cannot enforce trust against their own host, caller, alternate execution paths, shared keys, or shared storage failure domain.
+- **Root cause:** No concrete deployment platform, protected key facility, immutable retention system, trusted clock, external fencing target, or operational owner has been selected.
+- **Fix applied or proposed:** Follow `docs/research/phase-104-protected-deployment-architecture.md` after human selection and threat modeling of the target platform.
+- **Why this fix:** Protected controls must be enforced outside model and worker processes; naming local metadata differently would not reduce the risk.
+- **Remaining risk:** AUD100-004 and every Phase 99 deployment blocker remain unresolved.
+- **Refactor required:** Yes before any Phase 104 platform implementation or real integration.
+- **Related controls:** AUD100-004 through AUD100-008, TD-099, TD-100, Phases 101-103.
+- **Tests added:** None; Phase 104 is architecture-only.
+- **Tests still missing:** All platform custody, retention, concurrency, trusted-time, fencing, gateway-bypass, deployment, rollback, and recovery tests.
+- **Owner:** Nova Aegis
+- **Review date:** Before platform selection and at Phase 105 audit.
+
+### TD-103 - Budget permits do not enforce alternate execution paths
+
+- **Phase:** 103
+- **Status:** Mitigated inside the synthetic coordinator; external enforcement blocked
+- **Severity:** High
+- **What changed:** Added signed pre-operation budget debits, exact exhaustion, duplicate-operation refusal, usage verification, and terminal consumed-unit accounting.
+- **What broke or was discovered:** Phase 98 budget values were copied into receipts but did not constrain any operation or record consumption.
+- **Root cause:** The coordinator had ownership and terminal-state controls but no pre-operation metering boundary.
+- **Fix applied or proposed:** Require `authorize_consumption` before each synthetic operation and return a signed permit only after debit.
+- **Why this fix:** Pre-operation debit makes exhaustion deterministic and prevents worker self-reporting from defining accepted usage.
+- **Remaining risk:** Callers can bypass the coordinator unless every real worker/tool endpoint enforces permits; keys and time remain local.
+- **Refactor required:** Yes before real workers or tools.
+- **Related controls:** AUD100-003, `docs/research/phase-103-enforced-synthetic-budgets.md`.
+- **Tests added:** Six focused budget enforcement tests.
+- **Tests still missing:** Execution-gateway bypass, durable atomic debit, concurrent consumption, protected keys, trusted time, and real cost metering.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 105 audit or before any execution integration.
+
+### TD-102 - Witness-owned replay still shares a local failure domain
+
+- **Phase:** 102
+- **Status:** Mitigated for caller-constructed records; independent authority blocked
+- **Severity:** High
+- **What changed:** Removed raw-record attestation and required witness-owned anchored retrieval by evidence ID with checkpoint binding.
+- **What broke or was discovered:** A witness could previously sign any caller-constructed record without proving that it existed in authenticated persistent evidence.
+- **Root cause:** The Phase 97 attestation API accepted record objects across the witness boundary.
+- **Fix applied or proposed:** Accept only evidence IDs and require witness and arbiter verification through `AnchoredSQLiteSyntheticEvidenceStore`.
+- **Why this fix:** It moves evidence retrieval and chain verification into the witness path and cryptographically binds the current checkpoint.
+- **Remaining risk:** Evaluator, witnesses, keys, anchors, and storage remain controlled by one process and caller.
+- **Refactor required:** Yes before independent-evidence claims.
+- **Related controls:** AUD100-002, `docs/research/phase-102-witness-owned-verification.md`.
+- **Tests added:** Added missing-evidence and corrupted anchored-replay refusal to the witness suite.
+- **Tests still missing:** Separate process identity, non-exportable witness keys, independent storage credentials, revocation, and compromise recovery.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 105 audit or before witness deployment.
+
+### TD-101 - Local anchors are not immutable external retention
+
+- **Phase:** 101
+- **Status:** Mitigated when separately retained; protected retention blocked
+- **Severity:** High
+- **What changed:** Added signed chained checkpoints that detect evidence tail/full deletion, anchor rollback, missing anchors, and tampering when the anchor database survives.
+- **What broke or was discovered:** The Phase 96 self-contained chain accepted shortened or empty histories after tail or full deletion.
+- **Root cause:** Expected event count and terminal digest existed only inside the evidence database being verified.
+- **Fix applied or proposed:** Persist a separately signed checkpoint chain and require exact anchor agreement before replay or append.
+- **Why this fix:** An independently surviving expected count and terminal digest make tested truncation and rollback observable without weakening offline operation.
+- **Remaining risk:** An attacker deleting or rolling back both local databases can erase the expected state; local keys and backups are not protected.
+- **Refactor required:** Yes before complete-history or immutable-retention claims.
+- **Related controls:** AUD100-001, AUD100-007, `docs/research/phase-101-evidence-anchoring.md`.
+- **Tests added:** Six focused anchor and strict canonical JSON tests.
+- **Tests still missing:** Independent WORM retention, protected checkpoint keys, cross-device restore, concurrent writers, and dual-store power loss.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 105 audit or before retained-evidence integration.
+
 ### TD-100 - Phase 100 retains confirmed evidence, witness, and budget gaps
 
 - **Phase:** 100
@@ -56,6 +128,7 @@ Each phase record must answer:
 - **Tests still missing:** Tail/full deletion detection, forged pre-attestation evidence refusal, strict canonical JSON, authenticated witness history, concurrency, durable leases, trusted time, enforced budgets, protected custody, and deployment controls.
 - **Owner:** Nova Aegis
 - **Review date:** Phase 105 audit or before any boundary expansion.
+- **Remediation status:** AUD100-001 through AUD100-003 are mitigated in bounded local APIs by Phases 101-103. Their protected retention, independent authority, and external execution-enforcement variants remain open under TD-101 through TD-104.
 
 ### TD-099 - Pre-production boundary remains blocked
 
