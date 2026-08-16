@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-097 - Synthetic witness separation is not compromise independence
+
+- **Phase:** 97
+- **Status:** Mitigated for distinct local witness verification; independent external evidence remains blocked
+- **Severity:** High
+- **What changed:** Added exact evidence attestations, distinct evaluator/witness identity checks, witness-only keys, separate SQLite attestation persistence, and verified quorum decisions.
+- **What broke or was discovered:** Phase 96 authenticated evaluator evidence but did not provide a distinct verification path or quorum capable of refusing self-attestation and evidence substitution.
+- **Root cause:** Evidence authentication and evidence witnessing were owned by one local evaluator boundary.
+- **Fix applied or proposed:** Add local synthetic evidence witnesses, a separate attestation store, and a distinct-witness arbiter.
+- **Why this fix:** It tests identity, key, storage, binding, and quorum separation without introducing networking, external identity, or production authority.
+- **Remaining risk:** The same process and caller can control evaluator and witnesses, choose storage paths, access all local keys, and mutate both databases; compromise independence is not established.
+- **Refactor required:** Yes before independent evidence, organizational witness authority, distributed quorum, or production use.
+- **Related controls:** `docs/research/phase-97-independent-synthetic-witness.md`, AUD95-001 through AUD95-005, TD-096, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Six focused tests for restart persistence, self-witness refusal, exact binding, signature tampering, quorum, duplicate/unknown/insufficient witnesses, conflicts, and missing attestations.
+- **Tests still missing:** Protected witness identities and keys, immutable independent storage, process isolation, distributed quorum, revocation, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 100 audit or before any Phase 98 scope reopening.
+
 ### TD-096 - Authenticated evidence remains locally mutable
 
 - **Phase:** 96

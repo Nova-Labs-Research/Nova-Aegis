@@ -128,6 +128,14 @@ from .evidence_store import (
     SyntheticEvidenceKeyProvider,
     SyntheticEvidenceRecord,
 )
+from .evidence_witness import (
+    LocalSyntheticEvidenceWitness,
+    SQLiteSyntheticEvidenceWitnessStore,
+    SyntheticEvidenceWitnessArbiter,
+    SyntheticEvidenceWitnessAttestation,
+    SyntheticEvidenceWitnessDecision,
+    SyntheticEvidenceWitnessError,
+)
 
 __all__ = [
     "AgentK",
@@ -226,6 +234,12 @@ __all__ = [
     "SyntheticEvidenceError",
     "SyntheticEvidenceKeyProvider",
     "SyntheticEvidenceRecord",
+    "LocalSyntheticEvidenceWitness",
+    "SQLiteSyntheticEvidenceWitnessStore",
+    "SyntheticEvidenceWitnessArbiter",
+    "SyntheticEvidenceWitnessAttestation",
+    "SyntheticEvidenceWitnessDecision",
+    "SyntheticEvidenceWitnessError",
     "TaskRecord",
     "ExternalExecutionReceipt",
     "ExternalReceiptError",
