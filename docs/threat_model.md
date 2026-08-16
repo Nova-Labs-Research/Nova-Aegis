@@ -91,6 +91,8 @@ Enterprise Internal Systems
 
 Additional logical boundaries exist between model-generated text and executable actions; retrieved content and system instructions; Cortex proposals and Praetor authorization; Praetor decisions and MCP execution; semantic and deterministic evaluation; Cortex memory and authoritative evidence; and evidence retrieval and knowledge ingestion.
 
+The T1 transition introduces a local protected-signer boundary between the Nova Aegis runtime identity and a distinct Windows service identity. The boundary uses ACL-restricted named-pipe IPC and a non-exportable CNG key. New threats include caller impersonation, pipe ACL misconfiguration, confused-deputy signing, generic-oracle abuse, purpose substitution, request replay, downgrade, stale lifecycle state, signer-service compromise, local administrator compromise, audit loss, key loss, ambiguous disconnect, and silent fallback identity creation. T1 must authenticate the operating-system client token, domain-separate purposes, bind complete canonical envelopes, retain replay state, pin identity and key version, fail closed on dependency loss, and provide no trusted fallback key.
+
 > **Crossing a trust boundary requires validation.**
 
 ## 7. Threat Classification

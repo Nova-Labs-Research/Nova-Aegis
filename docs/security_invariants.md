@@ -350,7 +350,22 @@ Development or diagnostic mechanisms must not permit production-sensitive action
 ?debug=true -> skip_policy_checks  [prohibited]
 ```
 
-## 46. Invariant Enforcement Model
+## 46. INV-TRAJ-001 - Authorized Actions Cannot Compose Into a Prohibited State
+
+No sequence of individually authorized actions may collectively violate a protected invariant. Authorization of one action does not automatically authorize its trajectory, accumulated effect, or combination with other actions.
+
+The system must preserve trajectory-relevant state, evaluate cumulative budgets and effects, and refuse a next step when the resulting sequence would cross an authorization, evidence, policy, credential, or safety boundary.
+
+```text
+Action A -> individually allowed
+Action B -> individually allowed
+A + B    -> prohibited protected state
+Result   -> BLOCK before B executes
+```
+
+**Must never occur:** repeated or composed allowed operations silently create authority, exceed a protected budget, bypass separation of duties, or produce a state that no single operation was authorized to create.
+
+## 47. Invariant Enforcement Model
 
 Security invariants should eventually be enforced through multiple layers.
 
@@ -375,7 +390,7 @@ Audit Evidence
 
 No single prompt should be considered sufficient enforcement for a critical invariant.
 
-## 47. Initial Automated Invariant Tests
+## 48. Initial Automated Invariant Tests
 
 The MVP should include tests such as:
 
@@ -451,7 +466,7 @@ The MVP should include tests such as:
 
 **Expected:** Repetition alone does not establish authority.
 
-## 48. Build Acceptance Rule
+## 49. Build Acceptance Rule
 
 A Nova Aegis build must not be considered security-baseline compliant if it fails a required invariant test for the operating profile being evaluated. Capability improvements must not override invariant failures.
 
@@ -462,7 +477,7 @@ but INV-GOV-001 fails
 Result: Build rejected for sensitive governed operations.
 ```
 
-## 49. Invariant Change Control
+## 50. Invariant Change Control
 
 Changing a security invariant is a security-sensitive design decision. Invariant changes should require documented rationale, affected-threat analysis, architecture impact review, updated tests, versioning, and revalidation.
 
@@ -470,7 +485,7 @@ An implementation should be changed to satisfy an invariant before weakening the
 
 > **Fix the system before weakening the rule.**
 
-## 50. Relationship to Threat Model
+## 51. Relationship to Threat Model
 
 The relationship should remain explicit:
 
@@ -515,7 +530,7 @@ Evidence:
 Blocked request + audit event
 ```
 
-## 51. MVP Priority Invariants
+## 52. MVP Priority Invariants
 
 The first implementation should prioritize enforcement of:
 
@@ -534,7 +549,7 @@ The first implementation should prioritize enforcement of:
 
 These represent the minimum security contract for the initial governed agent workflow.
 
-## 52. Security Invariant Statement
+## 53. Security Invariant Statement
 
 > **Nova Aegis security is defined not only by what the system is capable of doing, but by what the system can demonstrably prevent itself from doing under failure, manipulation, ambiguity, and adversarial pressure.**
 

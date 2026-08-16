@@ -52,6 +52,8 @@ pytest -q
 
 The current audit gate is [Phase 100](docs/audits/phase-100-audit.md). Phases 101-103 implement bounded local remediation for signed evidence anchors, witness-owned anchored replay, and signed pre-operation budget debits. Phase 104 is architecture-only and requires a concrete protected deployment platform. The latest full validation reports 196 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, immutable external retention, independent witness authority, distributed recovery, trusted coordination, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
 
+The synthetic-to-enforced transition is now in T1 planning. The approved pilot uses a separate Windows service identity and non-exportable Microsoft Software KSP key over authenticated ACL-restricted local IPC. Implementation remains blocked until the service, lifecycle, audit, recovery, and rollback prerequisites are configured and reviewed; TPM-backed custody is not claimed on the current host.
+
 ## Documents
 
 - [Problem statement](docs/problem_statement.md)
@@ -102,6 +104,8 @@ The current audit gate is [Phase 100](docs/audits/phase-100-audit.md). Phases 10
 - [Phase 102 witness-owned verification research](docs/research/phase-102-witness-owned-verification.md)
 - [Phase 103 enforced synthetic budgets research](docs/research/phase-103-enforced-synthetic-budgets.md)
 - [Phase 104 protected deployment architecture](docs/research/phase-104-protected-deployment-architecture.md)
+- [Synthetic trust boundary transition roadmap](docs/transitions/synthetic-trust-boundary-roadmap.md)
+- [T1 protected signing plan](docs/transitions/t1-protected-signing-plan.md)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)
