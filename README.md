@@ -50,7 +50,7 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 95](docs/audits/phase-95-audit.md). Phase 95 freezes further Phase 96-100 implementation pending deliberate human review. The latest full validation reports 165 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
+The current audit gate is [Phase 95](docs/audits/phase-95-audit.md). Phase 96 was explicitly reopened for authenticated local synthetic evidence; Phases 97-100 remain frozen pending separate human review. The latest full validation reports 171 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, independent external evidence, distributed recovery, trusted reliability routing, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
 
 ## Documents
 
@@ -92,6 +92,7 @@ The current audit gate is [Phase 95](docs/audits/phase-95-audit.md). Phase 95 fr
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 94 scaling evaluation research](docs/research/phase-94-scaling-evaluation.md)
 - [Phases 96-100 frozen roadmap](docs/research/phase-96-100-roadmap.md)
+- [Phase 96 authenticated synthetic evidence research](docs/research/phase-96-protected-synthetic-evidence.md)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)

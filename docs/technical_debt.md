@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-096 - Authenticated evidence remains locally mutable
+
+- **Phase:** 96
+- **Status:** Mitigated for authenticated local replay; protected retention remains blocked
+- **Severity:** High
+- **What changed:** Added a SQLite evidence chain for synthetic transcripts and failure receipts with canonical payloads, sequence continuity, prior-event digests, HMAC authentication, and full replay verification.
+- **What broke or was discovered:** Existing synthetic outcome and failure records lacked a shared authenticated persistence boundary and could not prove complete restart replay or explicit corruption refusal.
+- **Root cause:** Phase 92-94 evidence was process-local or stored without a dedicated authenticated event chain.
+- **Fix applied or proposed:** Add `SQLiteSyntheticEvidenceStore` using injected local keys and fail-closed full-history verification before replay or append.
+- **Why this fix:** It detects tested local mutation, deletion, malformed rows, unknown keys, and chain gaps without adding network access or production authority.
+- **Remaining risk:** Direct database access can destroy evidence; local HMAC keys are not protected custody; SQLite and backups are not immutable retention; hardware power-loss and distributed ordering are unproven.
+- **Refactor required:** Yes before protected evidence, independent witness authority, distributed use, or production recovery.
+- **Related controls:** `docs/research/phase-96-protected-synthetic-evidence.md`, AUD95-001 through AUD95-005, TD-092 through TD-095, INV-FAIL-002, INV-AUD-001 through INV-AUD-003.
+- **Tests added:** Six focused tests for restart replay, payload tampering, missing rows, unknown historical keys, corrupt-chain append refusal, duplicate/invalid evidence, and partial rows.
+- **Tests still missing:** Hardware power-loss, protected key custody, immutable backups, concurrent writers, independent witnessing, distributed ordering, and deployment enforcement.
+- **Owner:** Nova Aegis
+- **Review date:** Phase 100 audit or before any Phase 97 scope reopening.
+
 ### TD-095 - Phase 95 retains high production blockers and freezes further work
 
 - **Phase:** 95

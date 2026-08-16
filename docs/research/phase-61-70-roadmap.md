@@ -46,7 +46,7 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 
 ### Frozen Phase 96-100 map
 
-| 96 | Protected synthetic evidence boundary | Authenticated append-only evidence and corruption refusal | Roadmap-only; frozen |
+| 96 | Authenticated synthetic evidence boundary | Authenticated append-only evidence and corruption refusal | Implemented locally; no protected authority claim |
 | 97 | Independent synthetic witness | Distinct witness verification and conflict refusal | Roadmap-only; frozen |
 | 98 | Bounded workload coordination | Explicit local ownership, budgets, and no hidden retry | Roadmap-only; frozen |
 | 99 | Pre-production boundary review | Review-only integration boundary and blocker checklist | Roadmap-only; frozen |
@@ -54,4 +54,4 @@ Phase 60 permits synthetic-only research. Protected identity, key custody, indep
 
 Each phase requires a focused experiment, failure-mode tests, a research decision record, and a technical-debt update. No phase may convert synthetic metadata into authority.
 
-Phase 100 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review. Phases 96-100 are frozen roadmap work until deliberate human review reopens them.
+Phase 100 is the next mandatory audit checkpoint unless a boundary expands or an invariant/security event requires earlier review. Phase 96 was explicitly reopened and implemented on 2026-08-16; Phases 97-100 remain frozen until separate deliberate human review reopens them.

@@ -122,6 +122,12 @@ from .scaling_evaluation import (
     SyntheticScalingError,
     SyntheticScalingEvaluator,
 )
+from .evidence_store import (
+    SQLiteSyntheticEvidenceStore,
+    SyntheticEvidenceError,
+    SyntheticEvidenceKeyProvider,
+    SyntheticEvidenceRecord,
+)
 
 __all__ = [
     "AgentK",
@@ -216,6 +222,10 @@ __all__ = [
     "SyntheticEvaluationReport",
     "SyntheticScalingError",
     "SyntheticScalingEvaluator",
+    "SQLiteSyntheticEvidenceStore",
+    "SyntheticEvidenceError",
+    "SyntheticEvidenceKeyProvider",
+    "SyntheticEvidenceRecord",
     "TaskRecord",
     "ExternalExecutionReceipt",
     "ExternalReceiptError",
