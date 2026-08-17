@@ -171,6 +171,8 @@ over:
 
 **guess -> continue -> execute**
 
+Reasoning-layer refusal may provide useful defense in depth when authority is absent or ambiguous, but it is not an enforcement boundary. Architecture and deterministic controls must preserve the same refusal state even when a model recommends continuing.
+
 ## 14. Auditability by Design
 
 Auditability should not be added after the system is complete. Important events should produce structured records from the beginning.

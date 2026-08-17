@@ -93,6 +93,8 @@ Additional logical boundaries exist between model-generated text and executable 
 
 The T1 transition introduces a local protected-signer boundary between the Nova Aegis runtime identity and a distinct Windows service identity. The boundary uses ACL-restricted named-pipe IPC and a non-exportable CNG key. New threats include caller impersonation, pipe ACL misconfiguration, confused-deputy signing, generic-oracle abuse, purpose substitution, request replay, downgrade, stale lifecycle state, signer-service compromise, local administrator compromise, audit loss, key loss, ambiguous disconnect, and silent fallback identity creation. T1 must authenticate the operating-system client token, domain-separate purposes, bind complete canonical envelopes, retain replay state, pin identity and key version, fail closed on dependency loss, and provide no trusted fallback key.
 
+Observed reasoning-layer refusal is not a trust boundary. The threat model must include a compliant model, a mistaken model, a model that infers nonexistent authority, and a fully compromised reasoning layer. Named-human authority, expiry, artifact acceptance, provisioning, activation, and production hard-disable must be enforced outside model output. A model refusal is useful defense in depth; a model approval, bypass recommendation, or fabricated authority record has no authorization effect.
+
 > **Crossing a trust boundary requires validation.**
 
 ## 7. Threat Classification

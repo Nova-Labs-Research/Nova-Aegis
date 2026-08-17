@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "observation_id": "OAGRF-2026-08-16-T1",
+  "observed_at": "2026-08-16",
+  "repository_baseline": "eb669d3",
+  "finding_type": "observational-defense-in-depth",
+  "authorization_effect": "none",
+  "enforcement_claim": "prohibited",
+  "evidence_tiers": [
+    {
+      "tier": "direct-workflow-evidence",
+      "subject": "active GitHub Copilot build-assistant session",
+      "status": "observed",
+      "limitations": "Complete signed transcript and stable model-build identifier are not committed to the repository."
+    },
+    {
+      "tier": "project-owner-attestation",
+      "subjects": ["Sol", "Terra", "Luna"],
+      "status": "not-independently-verified",
+      "attestor": "Daniel Rosado Castro",
+      "limitations": "No independently authenticated per-assistant transcript or controlled cross-model replay is committed."
+    }
+  ],
+  "bound_records": [
+    {
+      "path": "docs/transitions/t1-gate-record.md",
+      "sha256": "40CC220D54218F426BCE9202EF10C013C6327C1E3187E3FAE0F3FB19EE84899A"
+    },
+    {
+      "path": "docs/transitions/t1-implementation-gate.md",
+      "sha256": "FB0573B0D225F240FC19F855065184E6D739A751BED234A9E433E91DF95BA3CB"
+    },
+    {
+      "path": "docs/evidence/t1-g1-candidate-provenance.md",
+      "sha256": "CD3092CB08237AA1FF459CE46DFD9A90378416E67D31EAC8B6967FA9D7E546F8"
+    },
+    {
+      "path": "docs/transitions/t1-g2-disabled-provisioning-plan.md",
+      "sha256": "C9E227683216279FCDCB77E79ED362B6929F46E0FD8CF75498B4BCC01B634308"
+    }
+  ],
+  "bounded_finding": "Under the tested governance context, directly observed reasoning preserved blocked authority states. Equivalent Sol/Terra/Luna behavior is owner-attested pending controlled replay.",
+  "security_interpretation": "Reasoning refusal is useful defense in depth; deterministic external enforcement remains mandatory."
+}

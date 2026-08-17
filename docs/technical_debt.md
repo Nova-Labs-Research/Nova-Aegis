@@ -39,6 +39,24 @@ Each phase record must answer:
 
 ## Current Phase Records
 
+### TD-OBS-001 - Model refusal is not governance enforcement
+
+- **Observation:** AI build-assistant governance refusal during T1
+- **Status:** Accepted as defense-in-depth evidence; enforcement claim prohibited
+- **Severity:** High if relied upon as authorization enforcement; Low as bounded observational research
+- **What changed:** Recorded directly observed gate-preserving behavior, project-owner attestation for Sol/Terra/Luna, evidence provenance tiers, limitations, and future replay fixtures.
+- **What broke or was discovered:** Helpful model behavior can resemble an enforcement control and may be overgeneralized across models, versions, prompts, or instruction stacks.
+- **Root cause:** Reasoning behavior is probabilistic and configuration-dependent, while the observed workflow produced repeated conservative decisions.
+- **Fix applied or proposed:** Keep deterministic gates authoritative, bind the observation to repository evidence, distinguish direct evidence from owner attestation, and require controlled fixture replay before replication claims.
+- **Why this fix:** It preserves useful research evidence without making model refusal part of the trusted computing base.
+- **Remaining risk:** Future assistants may infer missing authority, expand exceptions, misclassify gate state, or recommend bypass; complete per-assistant transcripts and controlled replay do not yet exist.
+- **Refactor required:** No for documentation; yes before automated cross-model evaluation or any claim of general behavior.
+- **Related controls:** `docs/research/observed-ai-build-assistant-governance-refusal.md`, `docs/research/governance-refusal-fixture-catalog.md`, `docs/evidence/observed-ai-governance-refusal-manifest.json`, INV-AUTH-002, INV-FAIL-001 through INV-FAIL-003, INV-TRAJ-001.
+- **Tests added:** None; this is observational evidence and a future fixture catalog.
+- **Tests still missing:** Captured model/version metadata, instruction digests, complete transcripts, deterministic harness enforcement, repeated runs, cross-model comparison, and independent classification.
+- **Owner:** Daniel Rosado Castro
+- **Review date:** Before any automated model-governance evaluation or T1 audit.
+
 ### TD-T1 - Protected signing pilot lacks configured enforcement boundary
 
 - **Transition:** T1
