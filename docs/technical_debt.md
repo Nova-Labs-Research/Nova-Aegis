@@ -42,7 +42,7 @@ Each phase record must answer:
 ### TD-T1 - Protected signing pilot lacks configured enforcement boundary
 
 - **Transition:** T1
-- **Status:** Three-stage gate specified; G1/G2/G3 blocked on human authority and evidence
+- **Status:** Operational owner named; G1/G2/G3 remain blocked on complete owner metadata, accountable builder, independent reviewer, approvers, expiry, and evidence
 - **Severity:** High
 - **What changed:** Selected a bounded Windows protected-signing pilot and defined its signer, IPC, lifecycle, refusal, recovery, rollback, and assurance contracts.
 - **What broke or was discovered:** TPM readiness is unavailable or not exposed on this host, so hardware-backed custody cannot be claimed for the initial pilot.

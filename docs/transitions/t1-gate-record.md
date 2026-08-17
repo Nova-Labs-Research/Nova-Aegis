@@ -10,11 +10,11 @@ This record is the current T1 authority state. Descriptive plans and completed t
 
 | Required field | Value |
 |---|---|
-| Service owner | `UNASSIGNED` |
-| Lifecycle/key owner | `UNASSIGNED` |
-| Audit/replay owner | `UNASSIGNED` |
-| Recovery/rollback owner | `UNASSIGNED` |
-| Candidate builder | `UNASSIGNED` |
+| Service owner | Daniel Rosado Castro; role/contact/expiry pending |
+| Lifecycle/key owner | Daniel Rosado Castro; role/contact/expiry pending |
+| Audit/replay owner | Daniel Rosado Castro; role/contact/expiry pending |
+| Recovery/rollback owner | Daniel Rosado Castro; role/contact/expiry pending |
+| Candidate builder | `UNASSIGNED`; GPT 5.6, Sol, Luna, and Terra proposed as build assistants only |
 | Independent artifact reviewer | `UNASSIGNED` |
 | G1 approver | `UNASSIGNED` |
 | Source commit | `UNASSIGNED` |
@@ -63,3 +63,9 @@ This record is the current T1 authority state. Descriptive plans and completed t
 ## Refusal rule
 
 Any `UNASSIGNED`, stale, expired, revoked, ambiguous, conflicting, or digest-mismatched required field keeps the relevant gate blocked. No software component may populate human identity, approval, or risk-acceptance fields on behalf of a person.
+
+## Assignment note - 2026-08-16
+
+Daniel Rosado Castro explicitly accepted the four operational ownership categories above. Organizational role, escalation contact, effective/expiry dates, and replacement procedure were not supplied and remain required.
+
+GPT 5.6, Sol, Luna, and Terra were nominated for candidate-building work. They are recorded only as software build assistants. A named human accountable builder must review and accept their output and provenance; software cannot hold G1 authority, accountability, approval, or risk acceptance.
