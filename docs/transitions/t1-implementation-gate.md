@@ -33,6 +33,8 @@ For each owner, record name, organizational role, approved contact/escalation ro
 
 At least two distinct humans must participate in key creation, rotation, revocation, trust-root replacement, G2 approval, and G3 approval. The candidate builder must not be the sole artifact reviewer or sole installation approver.
 
+For a single-human research laboratory, the project owner may document a G1-only research exception when independent review is unavailable. The record must state that independence is not established, prohibit separation-of-duty claims, accept residual risk explicitly, bind the exception to one non-production candidate scope and environment, and set an exact expiry. Such an exception cannot apply to G2, G3, key lifecycle changes, production, or consequential authority.
+
 **Gate:** Any unresolved, expired, conflicted, self-assigned, or unreviewable ownership produces `BLOCK_IMPLEMENTATION`.
 
 ## 2. Approval authority

@@ -42,7 +42,7 @@ Each phase record must answer:
 ### TD-T1 - Protected signing pilot lacks configured enforcement boundary
 
 - **Transition:** T1
-- **Status:** Builder and approver named; G1 remains blocked on reviewer independence, complete owner metadata, expiry, and build evidence; G2/G3 blocked
+- **Status:** Single-human G1 research exception approved but inactive pending exact expiry; G2/G3 blocked and still require independent humans
 - **Severity:** High
 - **What changed:** Selected a bounded Windows protected-signing pilot and defined its signer, IPC, lifecycle, refusal, recovery, rollback, and assurance contracts.
 - **What broke or was discovered:** TPM readiness is unavailable or not exposed on this host, so hardware-backed custody cannot be claimed for the initial pilot.
@@ -50,6 +50,7 @@ Each phase record must answer:
 - **Fix applied or proposed:** Use distinct `NovaAegisRuntime` and `NovaAegisSigner` virtual service accounts, a non-exportable Microsoft Software KSP ECDSA P-256 key, an ACL-restricted authenticated named pipe, fail-closed replay/audit storage, and the reviewed rollback runbook; require a separate gate for hardware backing.
 - **Why this fix:** It can replace direct runtime key possession under testable local OS controls without adding network or consequential authority.
 - **Remaining risk:** Local administrator/service compromise, software-provider compromise, shared-host failure, audit/lifecycle tampering, and absence of hardware protection remain unresolved.
+- **Research-governance risk:** G1 self-review cannot detect all builder bias or artifact-review errors. No independence or separation-of-duty claim is permitted; G2/G3 cannot inherit this exception.
 - **Refactor required:** Yes before implementation and again before hardware-backed or production claims.
 - **Related controls:** `docs/transitions/t1-protected-signing-plan.md`, `docs/transitions/t1-deployment-specification.md`, `docs/transitions/t1-operations-runbook.md`, `docs/transitions/t1-implementation-gate.md`, `docs/transitions/t1-gate-record.md`, AUD100-004, TD-104, INV-TRAJ-001, INV-FAIL-001 through INV-FAIL-003.
 - **Tests added:** None; T1 remains planning-only.
