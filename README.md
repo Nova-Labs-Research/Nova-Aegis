@@ -112,6 +112,7 @@ G1 produced an uninstalled, non-authoritative protocol/core candidate with exact
 - [T1 operations runbook](docs/transitions/t1-operations-runbook.md)
 - [T1 implementation gate](docs/transitions/t1-implementation-gate.md)
 - [T1 gate record](docs/transitions/t1-gate-record.md)
+- [T1 G2 disabled provisioning plan](docs/transitions/t1-g2-disabled-provisioning-plan.md)
 - [T1 G1 candidate provenance](docs/evidence/t1-g1-candidate-provenance.md)
 - [T1 G1 candidate SBOM](docs/evidence/t1-g1-sbom.json)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)

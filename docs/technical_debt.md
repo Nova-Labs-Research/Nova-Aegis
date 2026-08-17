@@ -51,6 +51,7 @@ Each phase record must answer:
 - **Why this fix:** It can replace direct runtime key possession under testable local OS controls without adding network or consequential authority.
 - **Remaining risk:** Local administrator/service compromise, software-provider compromise, shared-host failure, audit/lifecycle tampering, and absence of hardware protection remain unresolved.
 - **Research-governance risk:** G1 self-review cannot detect all builder bias or artifact-review errors. No independence or separation-of-duty claim is permitted; G2/G3 cannot inherit this exception.
+- **G2 status:** `BLOCK_G2`. The current candidate lacks service/IPC/state/audit/disabled-signing controls, and all G2 human approval fields remain unassigned. The acceptance contract is `docs/transitions/t1-g2-disabled-provisioning-plan.md`.
 - **Refactor required:** Yes before implementation and again before hardware-backed or production claims.
 - **Related controls:** `docs/transitions/t1-protected-signing-plan.md`, `docs/transitions/t1-deployment-specification.md`, `docs/transitions/t1-operations-runbook.md`, `docs/transitions/t1-implementation-gate.md`, `docs/transitions/t1-gate-record.md`, AUD100-004, TD-104, INV-TRAJ-001, INV-FAIL-001 through INV-FAIL-003.
 - **Tests added:** Eleven pytest-discoverable candidate tests for strict envelope binding/refusal, lifetime, blocked activation, no key creation, and no network listener; full suite is 207 tests.

@@ -42,6 +42,8 @@ This record is the current T1 authority state. Descriptive plans and completed t
 
 ## G2 disabled provisioning
 
+Current dependency status: `BLOCK_G2`. The G1 protocol/core candidate is evidence-bound but `BLOCKED_INCOMPLETE` and is not an accepted G2 artifact. The G1 single-human exception has no G2 applicability.
+
 | Required field | Value |
 |---|---|
 | Installation change ID | `UNASSIGNED` |

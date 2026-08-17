@@ -8,7 +8,7 @@ The synthetic trust model does not end all at once. Each transition may replace 
 
 | Transition | Boundary | Status | Audit requirement |
 |---|---|---|---|
-| T1 | Protected signing identity and key custody | Planning approved; implementation blocked pending service setup | Mandatory before T2 |
+| T1 | Protected signing identity and key custody | G1 protocol/core candidate built; G1 acceptance and G2 disabled provisioning blocked | Mandatory before T2 |
 | T2 | Independently retained anchored state | Planned | Mandatory before T3 |
 | T3 | Authenticated transport | Planned | Mandatory before T4 |
 | T4 | Isolated real worker with synthetic tools | Planned | Mandatory before T5 |
