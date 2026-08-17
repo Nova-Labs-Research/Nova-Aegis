@@ -16,8 +16,12 @@ This record is the current T1 authority state. Descriptive plans and completed t
 | Recovery/rollback owner | Daniel Rosado Castro; Project Owner / Independent Researcher; repository governance escalation; expires 2026-09-15 |
 | Candidate builder | Daniel Rosado Castro |
 | AI build assistants | GPT-5.6, Sol, Luna, Terra; no authority or risk acceptance |
-| Artifact reviewer | Daniel Rosado Castro |
-| Reviewer independence | `NOT ESTABLISHED`; same human as accountable builder |
+| Builder self-reviewer | Daniel Rosado Castro |
+| Independent human reviewer | Hecmaris M. Rosado Gonzalez; assignment accepted, review evidence pending |
+| Relationship to builder | Family member; disclosed |
+| Independence scope | Independent from artifact construction; no construction contribution recorded |
+| Technical authority claimed | `NONE` beyond defined artifact-review scope |
+| Reviewer independence | `ASSIGNED_NOT_YET_EVIDENCED` |
 | G1 approver | Daniel Rosado Castro |
 | Owner metadata authority | Daniel Rosado Castro |
 | Independent human review | `NOT ESTABLISHED` |
@@ -87,7 +91,9 @@ Daniel Rosado Castro explicitly accepted the four operational ownership categori
 
 Daniel Rosado Castro explicitly accepted accountable builder, artifact reviewer, G1 approver, and owner-metadata authority. GPT-5.6, Sol, Luna, and Terra are recorded only as software build assistants; they cannot hold G1 authority, accountability, approval, independence, or risk acceptance.
 
-Reviewer independence is explicitly not established because Daniel Rosado Castro is both accountable builder and artifact reviewer. This disclosure is auditable but does not satisfy the independent-review requirement. G1 remains `BLOCKED` until a different named human independently reviews the exact candidate artifact, or a separately audited governance decision changes that requirement before any build authorization.
+Daniel Rosado Castro performed builder self-review, which does not establish independence. Hecmaris M. Rosado Gonzalez is now assigned as the independent human artifact reviewer. The family relationship to the builder is disclosed; familial relationship does not automatically invalidate artifact-review independence, but it is a conflict-of-interest consideration that must remain visible.
+
+Independence is bounded to non-participation in artifact construction and review of the exact evidence-bound candidate. Hecmaris claims no lifecycle, installation, security-architecture, G2/G3, production, or consequential technical authority beyond the defined review scope. Assignment alone is not completed review evidence. G1 artifact acceptance remains `BLOCKED_INCOMPLETE` until a dated review record binds the source commit, package digest, SBOM/provenance digests, test evidence, known incomplete surface, decision, limitations, and reviewer acknowledgement.
 
 ## Single-human research exception - 2026-08-16
 
