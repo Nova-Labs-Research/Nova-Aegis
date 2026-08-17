@@ -42,7 +42,7 @@ Each phase record must answer:
 ### TD-T1 - Protected signing pilot lacks configured enforcement boundary
 
 - **Transition:** T1
-- **Status:** Deployment specified; implementation blocked on assigned owners, reviewed binary, and elevated installation change
+- **Status:** Three-stage gate specified; G1/G2/G3 blocked on human authority and evidence
 - **Severity:** High
 - **What changed:** Selected a bounded Windows protected-signing pilot and defined its signer, IPC, lifecycle, refusal, recovery, rollback, and assurance contracts.
 - **What broke or was discovered:** TPM readiness is unavailable or not exposed on this host, so hardware-backed custody cannot be claimed for the initial pilot.
@@ -51,7 +51,7 @@ Each phase record must answer:
 - **Why this fix:** It can replace direct runtime key possession under testable local OS controls without adding network or consequential authority.
 - **Remaining risk:** Local administrator/service compromise, software-provider compromise, shared-host failure, audit/lifecycle tampering, and absence of hardware protection remain unresolved.
 - **Refactor required:** Yes before implementation and again before hardware-backed or production claims.
-- **Related controls:** `docs/transitions/t1-protected-signing-plan.md`, `docs/transitions/t1-deployment-specification.md`, `docs/transitions/t1-operations-runbook.md`, AUD100-004, TD-104, INV-TRAJ-001, INV-FAIL-001 through INV-FAIL-003.
+- **Related controls:** `docs/transitions/t1-protected-signing-plan.md`, `docs/transitions/t1-deployment-specification.md`, `docs/transitions/t1-operations-runbook.md`, `docs/transitions/t1-implementation-gate.md`, `docs/transitions/t1-gate-record.md`, AUD100-004, TD-104, INV-TRAJ-001, INV-FAIL-001 through INV-FAIL-003.
 - **Tests added:** None; T1 remains planning-only.
 - **Tests still missing:** All protected key, caller-token, named-pipe, lifecycle, replay, rotation, restart, failure, rollback, and substitute-key adversarial tests.
 - **Owner:** Nova Aegis

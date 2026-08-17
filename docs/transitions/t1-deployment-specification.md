@@ -164,15 +164,13 @@ The service must write a mandatory audit event before returning `SIGNED`. If Eve
 
 Uninstall is a separate approved operation. It removes service registration and binaries only after preserving required audit and public verification evidence. Private-key deletion requires explicit two-person approval and a recorded key-destruction event. Uninstall never exports the key or replays queued requests.
 
-## Approval fields
+## Authority and gate records
 
-- Accountable service owner: `UNASSIGNED`
-- Primary lifecycle approver: `UNASSIGNED`
-- Independent lifecycle approver: `UNASSIGNED`
-- Audit owner: `UNASSIGNED`
-- Installation change ID: `UNASSIGNED`
-- Reviewed signer binary digest: `UNASSIGNED`
-- Approved public-key fingerprint: `UNASSIGNED`
-- Rollback exercise record: `UNASSIGNED`
+The authoritative prerequisites and current decisions are maintained in:
+
+- `docs/transitions/t1-implementation-gate.md`; and
+- `docs/transitions/t1-gate-record.md`.
+
+The key fingerprint is necessarily observed after G2 creates the non-exportable disabled pilot key. G2 approval binds the exact key-creation parameters; G3 approval binds the observed fingerprint and complete post-provision evidence bundle. The signer purpose remains disabled between those gates.
 
 Implementation remains blocked while any approval field is unassigned.

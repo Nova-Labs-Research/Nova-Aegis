@@ -15,6 +15,8 @@ This is a dry-run operational procedure. Commands that create accounts, services
 7. Verify Event Log ownership, retention, capacity, access, export, and failure behavior.
 8. Approve key loss, revocation, rollback, uninstall, and incident contacts.
 
+The runbook is executed in stages: G1 builds only, G2 provisions a disabled pilot, and G3 activates the single allowlisted purpose only after observed host evidence and rollback evidence are independently approved. Never combine G2 and G3 in one implicit change.
+
 ## Installation evidence to capture
 
 - change ID and two approver identities;

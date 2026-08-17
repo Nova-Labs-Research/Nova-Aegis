@@ -108,6 +108,8 @@ The synthetic-to-enforced transition is now in T1 planning. The approved pilot u
 - [T1 protected signing plan](docs/transitions/t1-protected-signing-plan.md)
 - [T1 deployment specification](docs/transitions/t1-deployment-specification.md)
 - [T1 operations runbook](docs/transitions/t1-operations-runbook.md)
+- [T1 implementation gate](docs/transitions/t1-implementation-gate.md)
+- [T1 gate record](docs/transitions/t1-gate-record.md)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)

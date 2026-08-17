@@ -136,6 +136,8 @@ It does not establish hardware-backed custody, administrator-compromise resistan
 The concrete defaults and operational requirements are defined in:
 
 - `docs/transitions/t1-deployment-specification.md`; and
-- `docs/transitions/t1-operations-runbook.md`.
+- `docs/transitions/t1-operations-runbook.md`;
+- `docs/transitions/t1-implementation-gate.md`; and
+- `docs/transitions/t1-gate-record.md`.
 
 The specification leaves accountable owners, approvers, change ID, reviewed binary digest, public-key fingerprint, and rollback evidence explicitly unassigned. T1 implementation remains blocked until those fields are assigned and reviewed.
