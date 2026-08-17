@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "candidate_name": "NovaAegis.ProtectedSigner-g1.zip",
+  "candidate_type": "uninstalled-non-authoritative-protocol-core",
+  "source_commit": "d5fc17b82ceb125a14d8552d54b9d604d59ebde3",
+  "evidence_commit": "767567b78e556a4679a5f30cb8ab0900ac817928",
+  "package": {
+    "sha256": "CC4B6AF816F5DDFE1909F05DF4B1AA2649D4095F147028F17B2B10E7138BC126"
+  },
+  "files": [
+    {
+      "path": "NovaAegis.ProtectedSigner.deps.json",
+      "bytes": 469,
+      "sha256": "C0A581A51816D7A4A5F62AF8A3B9572D456441C4855B72B96BC15594742EA768"
+    },
+    {
+      "path": "NovaAegis.ProtectedSigner.dll",
+      "bytes": 40960,
+      "sha256": "6F3E02E656239BDB771AA6A661D4C6A429F791351E12DE9E97E49F9AC98A45EA"
+    },
+    {
+      "path": "NovaAegis.ProtectedSigner.exe",
+      "bytes": 162816,
+      "sha256": "CF1E3578D409D6CB12CDF8C342C45535ED559B4F9F350A801F5373B15716D86D"
+    },
+    {
+      "path": "NovaAegis.ProtectedSigner.runtimeconfig.json",
+      "bytes": 399,
+      "sha256": "3E965CD7CFD553C2FF4E842D8D8019AAAE2DA0A21D92FF85A87573DD8D1B95C6"
+    }
+  ],
+  "sbom": {
+    "path": "docs/evidence/t1-g1-sbom.json",
+    "sha256": "76EA6EE3BD137F081B3405384DA00A885F7394A65C3D8381CCE9BB419E60BDD7"
+  },
+  "provenance": {
+    "path": "docs/evidence/t1-g1-candidate-provenance.md",
+    "sha256": "CD3092CB08237AA1FF459CE46DFD9A90378416E67D31EAC8B6967FA9D7E546F8"
+  },
+  "recorded_validation": {
+    "focused_tests_passed": 11,
+    "complete_tests_passed": 207,
+    "dotnet_build": "passed",
+    "python_compile": "passed",
+    "git_diff_check": "passed"
+  },
+  "gate_state": {
+    "g1_build": "complete",
+    "g1_artifact_acceptance": "blocked_incomplete_pending_review_and_candidate_completeness",
+    "g2": "blocked",
+    "g3": "blocked"
+  }
+}

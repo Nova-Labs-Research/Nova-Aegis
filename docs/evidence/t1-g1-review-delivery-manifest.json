@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "delivery_name": "NovaAegis-T1-G1-Independent-Review.zip",
+  "delivery_location": "artifacts/t1-g1-review/NovaAegis-T1-G1-Independent-Review.zip",
+  "delivery_sha256": "85072DD6A3D7FEE6017EE6CFCFD99A55555535D185A0666FC8AEC5E9554836F6",
+  "packaging_script": {
+    "path": "scripts/build-t1-g1-review-package.ps1",
+    "sha256": "12E031553E18DD1EF3AB6D25D2068117BE324F065049654DD515C5D83B774169"
+  },
+  "review_form": {
+    "path": "docs/reviews/t1-g1-independent-artifact-review-package.md",
+    "sha256": "31F57DB5232460F468522A295672AD39073B483055D990F54B7D89D642F3F89F"
+  },
+  "candidate_sha256": "CC4B6AF816F5DDFE1909F05DF4B1AA2649D4095F147028F17B2B10E7138BC126",
+  "candidate_file_manifest_sha256": "6E40B0AC1AA6DC1EB3BD3F579E1DC8854092E31A158A0998FA7A364BA1A9EC5C",
+  "sbom_sha256": "76EA6EE3BD137F081B3405384DA00A885F7394A65C3D8381CCE9BB419E60BDD7",
+  "provenance_sha256": "CD3092CB08237AA1FF459CE46DFD9A90378416E67D31EAC8B6967FA9D7E546F8",
+  "authority": "NONE",
+  "g1_artifact_acceptance": "BLOCKED_INCOMPLETE_PENDING_REVIEW_AND_CANDIDATE_COMPLETENESS",
+  "g2": "BLOCKED",
+  "g3": "BLOCKED",
+  "note": "The delivery ZIP is a local ignored evidence artifact. Its hash identifies this exact handoff and grants no installation or activation authority."
+}

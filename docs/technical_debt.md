@@ -60,7 +60,7 @@ Each phase record must answer:
 ### TD-T1 - Protected signing pilot lacks configured enforcement boundary
 
 - **Transition:** T1
-- **Status:** Independent artifact reviewer assigned; review evidence and candidate completeness remain pending; G2/G3 blocked
+- **Status:** Independent reviewer package prepared; reviewer decision and candidate completeness remain pending; G2/G3 blocked
 - **Severity:** High
 - **What changed:** Selected a bounded Windows protected-signing pilot and defined its signer, IPC, lifecycle, refusal, recovery, rollback, and assurance contracts.
 - **What broke or was discovered:** TPM readiness is unavailable or not exposed on this host, so hardware-backed custody cannot be claimed for the initial pilot.
@@ -68,7 +68,7 @@ Each phase record must answer:
 - **Fix applied or proposed:** Use distinct `NovaAegisRuntime` and `NovaAegisSigner` virtual service accounts, a non-exportable Microsoft Software KSP ECDSA P-256 key, an ACL-restricted authenticated named pipe, fail-closed replay/audit storage, and the reviewed rollback runbook; require a separate gate for hardware backing.
 - **Why this fix:** It can replace direct runtime key possession under testable local OS controls without adding network or consequential authority.
 - **Remaining risk:** Local administrator/service compromise, software-provider compromise, shared-host failure, audit/lifecycle tampering, and absence of hardware protection remain unresolved.
-- **Research-governance risk:** A distinct reviewer is assigned, but completed review evidence does not yet exist and the disclosed family relationship may introduce bias or coercion risk. Independence is claimed only from artifact construction; no broader separation-of-duty or technical-authority claim is permitted.
+- **Research-governance risk:** A distinct reviewer and exact evidence package exist, but completed review evidence does not yet exist and the disclosed family relationship may introduce bias or coercion risk. Independence is claimed only from artifact construction; no broader separation-of-duty or technical-authority claim is permitted.
 - **G2 status:** `BLOCK_G2`. The current candidate lacks service/IPC/state/audit/disabled-signing controls, and all G2 human approval fields remain unassigned. The acceptance contract is `docs/transitions/t1-g2-disabled-provisioning-plan.md`.
 - **Refactor required:** Yes before implementation and again before hardware-backed or production claims.
 - **Related controls:** `docs/transitions/t1-protected-signing-plan.md`, `docs/transitions/t1-deployment-specification.md`, `docs/transitions/t1-operations-runbook.md`, `docs/transitions/t1-implementation-gate.md`, `docs/transitions/t1-gate-record.md`, AUD100-004, TD-104, INV-TRAJ-001, INV-FAIL-001 through INV-FAIL-003.
