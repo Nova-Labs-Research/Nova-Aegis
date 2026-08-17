@@ -42,7 +42,7 @@ Each phase record must answer:
 ### TD-T1 - Protected signing pilot lacks configured enforcement boundary
 
 - **Transition:** T1
-- **Status:** Single-human G1 research exception approved but inactive pending exact expiry; G2/G3 blocked and still require independent humans
+- **Status:** G1 candidate build authorized under bounded exception expiring 2026-09-15; artifact acceptance pending evidence; G2/G3 blocked
 - **Severity:** High
 - **What changed:** Selected a bounded Windows protected-signing pilot and defined its signer, IPC, lifecycle, refusal, recovery, rollback, and assurance contracts.
 - **What broke or was discovered:** TPM readiness is unavailable or not exposed on this host, so hardware-backed custody cannot be claimed for the initial pilot.

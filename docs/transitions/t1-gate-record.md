@@ -21,20 +21,24 @@ This record is the current T1 authority state. Descriptive plans and completed t
 | G1 approver | Daniel Rosado Castro |
 | Owner metadata authority | Daniel Rosado Castro |
 | Independent human review | `NOT ESTABLISHED` |
-| Research exception | `APPROVED` by project owner; inactive pending exact expiry |
+| Research exception | `ACTIVE`; approved by project owner |
 | Environment | Single-human research laboratory |
 | Exception scope | T1 non-production G1 candidate pilot only |
 | Consequential authority | `NONE` |
 | Separation-of-duty claim | `PROHIBITED` |
 | Residual risk | `ACCEPTED` by project owner for bounded experiment |
-| Research exception expiry | `UNASSIGNED` |
+| Research exception effective date | `2026-08-16` |
+| Research exception expiry | `2026-09-15` |
+| G2/G3 applicability | `NONE` |
 | Source commit | `UNASSIGNED` |
 | Build/toolchain record | `UNASSIGNED` |
 | Dependency lock/SBOM digest | `UNASSIGNED` |
 | Candidate package digest | `UNASSIGNED` |
 | Focused test evidence digest | `UNASSIGNED` |
 | G1 approval expiry | `UNASSIGNED` |
-| G1 decision | `BLOCKED` |
+| G1 build authorization | `AUTHORIZED_TO_BUILD` uninstalled non-production candidate only |
+| G1 artifact acceptance | `PENDING_EVIDENCE` |
+| G1 decision | `IN_PROGRESS`; no installation authority |
 
 ## G2 disabled provisioning
 
@@ -89,4 +93,4 @@ Project owner Daniel Rosado Castro approved a bounded exception acknowledging th
 
 The residual risk of self-review is explicitly accepted for that bounded experiment. AI build assistants may provide analysis but do not supply human independence. The exception terminates immediately on candidate digest change, scope expansion, environment change, authority change, T1 audit, or its exact expiry date, whichever occurs first.
 
-The exact expiry date was not supplied. Under the gate's fail-closed expiry rule, this exception is recorded but inactive and does not yet authorize G1 candidate building.
+The project owner assigned expiry `2026-09-15`. The exception is active only from `2026-08-16` through that date and has no G2 or G3 applicability. It authorizes building and testing one uninstalled non-production candidate; artifact acceptance remains pending exact digest, provenance, SBOM, and test evidence.
