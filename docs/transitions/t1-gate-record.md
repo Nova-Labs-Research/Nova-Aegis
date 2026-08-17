@@ -14,9 +14,12 @@ This record is the current T1 authority state. Descriptive plans and completed t
 | Lifecycle/key owner | Daniel Rosado Castro; role/contact/expiry pending |
 | Audit/replay owner | Daniel Rosado Castro; role/contact/expiry pending |
 | Recovery/rollback owner | Daniel Rosado Castro; role/contact/expiry pending |
-| Candidate builder | `UNASSIGNED`; GPT 5.6, Sol, Luna, and Terra proposed as build assistants only |
-| Independent artifact reviewer | `UNASSIGNED` |
-| G1 approver | `UNASSIGNED` |
+| Candidate builder | Daniel Rosado Castro |
+| AI build assistants | GPT-5.6, Sol, Luna, Terra; no authority or risk acceptance |
+| Artifact reviewer | Daniel Rosado Castro |
+| Reviewer independence | `NOT ESTABLISHED`; same human as accountable builder |
+| G1 approver | Daniel Rosado Castro |
+| Owner metadata authority | Daniel Rosado Castro |
 | Source commit | `UNASSIGNED` |
 | Build/toolchain record | `UNASSIGNED` |
 | Dependency lock/SBOM digest | `UNASSIGNED` |
@@ -68,4 +71,6 @@ Any `UNASSIGNED`, stale, expired, revoked, ambiguous, conflicting, or digest-mis
 
 Daniel Rosado Castro explicitly accepted the four operational ownership categories above. Organizational role, escalation contact, effective/expiry dates, and replacement procedure were not supplied and remain required.
 
-GPT 5.6, Sol, Luna, and Terra were nominated for candidate-building work. They are recorded only as software build assistants. A named human accountable builder must review and accept their output and provenance; software cannot hold G1 authority, accountability, approval, or risk acceptance.
+Daniel Rosado Castro explicitly accepted accountable builder, artifact reviewer, G1 approver, and owner-metadata authority. GPT-5.6, Sol, Luna, and Terra are recorded only as software build assistants; they cannot hold G1 authority, accountability, approval, independence, or risk acceptance.
+
+Reviewer independence is explicitly not established because Daniel Rosado Castro is both accountable builder and artifact reviewer. This disclosure is auditable but does not satisfy the independent-review requirement. G1 remains `BLOCKED` until a different named human independently reviews the exact candidate artifact, or a separately audited governance decision changes that requirement before any build authorization.
