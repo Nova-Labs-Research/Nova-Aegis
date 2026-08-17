@@ -17,14 +17,14 @@ This record is the current T1 authority state. Descriptive plans and completed t
 | Candidate builder | Daniel Rosado Castro |
 | AI build assistants | GPT-5.6, Sol, Luna, Terra; no authority or risk acceptance |
 | Builder self-reviewer | Daniel Rosado Castro |
-| Independent human reviewer | Hecmaris M. Rosado Gonzalez; assignment accepted, review evidence pending |
+| Independent human reviewer | Hecmaris M. Rosado Gonzalez; bounded review completed 2026-08-16 |
 | Relationship to builder | Family member; disclosed |
 | Independence scope | Independent from artifact construction; no construction contribution recorded |
 | Technical authority claimed | `NONE` beyond defined artifact-review scope |
-| Reviewer independence | `ASSIGNED_NOT_YET_EVIDENCED` |
+| Reviewer independence | `EVIDENCED_BOUNDED`; independent from construction only |
 | G1 approver | Daniel Rosado Castro |
 | Owner metadata authority | Daniel Rosado Castro |
-| Independent human review | `NOT ESTABLISHED` |
+| Independent human review | `COMPLETED_BOUNDED`; organizational independence not established |
 | Research exception | `ACTIVE`; approved by project owner |
 | Environment | Single-human research laboratory |
 | Exception scope | T1 non-production G1 candidate pilot only |
@@ -39,6 +39,9 @@ This record is the current T1 authority state. Descriptive plans and completed t
 | Dependency lock/SBOM digest | `76EA6EE3BD137F081B3405384DA00A885F7394A65C3D8381CCE9BB419E60BDD7` |
 | Candidate package digest | `CC4B6AF816F5DDFE1909F05DF4B1AA2649D4095F147028F17B2B10E7138BC126` |
 | Focused test evidence | 11 focused tests passed; 207 complete tests passed |
+| Independent review decision | `ACCEPT` for exact identified candidate/evidence only |
+| Independent review record | `docs/reviews/t1-g1-independent-artifact-review-2026-08-16.md`; SHA-256 `C00E533B0029F2D545E5CAC3B5CC7E455B7DED24F3CEA23AC9E1773B00B2874E` |
+| Independently reproduced technical checks | None reported; documentary/package-completeness review only |
 | G1 approval expiry | `2026-09-15` |
 | G1 build authorization | `COMPLETED` for uninstalled non-production protocol/core candidate |
 | G1 artifact acceptance | `BLOCKED_INCOMPLETE` |
@@ -93,7 +96,9 @@ Daniel Rosado Castro explicitly accepted accountable builder, artifact reviewer,
 
 Daniel Rosado Castro performed builder self-review, which does not establish independence. Hecmaris M. Rosado Gonzalez is now assigned as the independent human artifact reviewer. The family relationship to the builder is disclosed; familial relationship does not automatically invalidate artifact-review independence, but it is a conflict-of-interest consideration that must remain visible.
 
-Independence is bounded to non-participation in artifact construction and review of the exact evidence-bound candidate. Hecmaris claims no lifecycle, installation, security-architecture, G2/G3, production, or consequential technical authority beyond the defined review scope. Assignment alone is not completed review evidence. G1 artifact acceptance remains `BLOCKED_INCOMPLETE` until a dated review record binds the source commit, package digest, SBOM/provenance digests, test evidence, known incomplete surface, decision, limitations, and reviewer acknowledgement.
+Independence is bounded to non-participation in artifact construction and review of the exact evidence-bound candidate. Hecmaris claims no lifecycle, installation, security-architecture, G2/G3, production, or consequential technical authority beyond the defined review scope.
+
+Hecmaris returned `ACCEPT` on 2026-08-16 for the exact candidate SHA-256 and acknowledged manifest, SBOM, provenance, validation, limitations, and blocked capabilities. The listed materials did not include the candidate ZIP, and no independently reproduced build, hash calculation, source review, binary inspection, or execution test was reported. The decision establishes bounded documentary artifact review only. G1 artifact acceptance remains `BLOCKED_INCOMPLETE` because the reviewed protocol/core candidate lacks required service, IPC, replay/lifecycle, audit, disabled-state, installation, rollback, and activation controls.
 
 ## Single-human research exception - 2026-08-16
 

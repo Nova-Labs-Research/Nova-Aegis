@@ -120,6 +120,7 @@ G1 produced an uninstalled, non-authoritative protocol/core candidate with exact
 - [T1 G1 candidate SBOM](docs/evidence/t1-g1-sbom.json)
 - [T1 G1 candidate file manifest](docs/evidence/t1-g1-candidate-file-manifest.json)
 - [T1 G1 independent review package](docs/reviews/t1-g1-independent-artifact-review-package.md)
+- [T1 G1 completed independent review](docs/reviews/t1-g1-independent-artifact-review-2026-08-16.md)
 - [T1 G1 review delivery manifest](docs/evidence/t1-g1-review-delivery-manifest.json)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
