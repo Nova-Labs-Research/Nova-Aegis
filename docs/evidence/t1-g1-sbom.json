@@ -1,0 +1,46 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:d5fc17b8-2ceb-525a-94d8-552d54b9d604",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-08-16T00:00:00Z",
+    "component": {
+      "type": "application",
+      "name": "NovaAegis.ProtectedSigner",
+      "version": "g1-d5fc17b",
+      "description": "Uninstalled, non-authoritative T1 protocol/core candidate",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6F3E02E656239BDB771AA6A661D4C6A429F791351E12DE9E97E49F9AC98A45EA"
+        }
+      ],
+      "properties": [
+        {
+          "name": "nova-aegis:source-commit",
+          "value": "d5fc17b82ceb125a14d8552d54b9d604d59ebde3"
+        },
+        {
+          "name": "nova-aegis:target-framework",
+          "value": "net10.0-windows7.0"
+        },
+        {
+          "name": "nova-aegis:activation",
+          "value": "BLOCKED_G1_CANDIDATE"
+        },
+        {
+          "name": "nova-aegis:nuget-dependencies",
+          "value": "none"
+        }
+      ]
+    }
+  },
+  "components": [],
+  "dependencies": [
+    {
+      "ref": "NovaAegis.ProtectedSigner@g1-d5fc17b",
+      "dependsOn": []
+    }
+  ]
+}

@@ -50,9 +50,11 @@ $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
 pytest -q
 ```
 
-The current audit gate is [Phase 100](docs/audits/phase-100-audit.md). Phases 101-103 implement bounded local remediation for signed evidence anchors, witness-owned anchored replay, and signed pre-operation budget debits. Phase 104 is architecture-only and requires a concrete protected deployment platform. The latest full validation reports 196 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, immutable external retention, independent witness authority, distributed recovery, trusted coordination, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
+The current audit gate is [Phase 100](docs/audits/phase-100-audit.md). Phases 101-103 implement bounded local remediation for signed evidence anchors, witness-owned anchored replay, and signed pre-operation budget debits. Phase 104 is architecture-only and requires a concrete protected deployment platform. The latest full validation reports 207 passing tests; compilation and diff integrity checks also pass. Protected identity and key custody, immutable external retention, independent witness authority, distributed recovery, trusted coordination, networked MCP, real data, live semantic evaluation, consequential tools, production recovery, and real containment remain blocked.
 
 The synthetic-to-enforced transition is now in T1 planning. The approved pilot uses a separate Windows service identity and non-exportable Microsoft Software KSP key over authenticated ACL-restricted local IPC. Implementation remains blocked until the service, lifecycle, audit, recovery, and rollback prerequisites are configured and reviewed; TPM-backed custody is not claimed on the current host.
+
+G1 produced an uninstalled, non-authoritative protocol/core candidate with exact source, package, SBOM, provenance, and test evidence. It has no activation or key-creation path. G1 artifact acceptance and all G2/G3 authority remain blocked until the required Windows service, authenticated named pipe, replay/lifecycle state, mandatory audit, and activation-safe signing controls exist and pass review.
 
 ## Documents
 
@@ -110,6 +112,8 @@ The synthetic-to-enforced transition is now in T1 planning. The approved pilot u
 - [T1 operations runbook](docs/transitions/t1-operations-runbook.md)
 - [T1 implementation gate](docs/transitions/t1-implementation-gate.md)
 - [T1 gate record](docs/transitions/t1-gate-record.md)
+- [T1 G1 candidate provenance](docs/evidence/t1-g1-candidate-provenance.md)
+- [T1 G1 candidate SBOM](docs/evidence/t1-g1-sbom.json)
 - [Phase 93 failure semantics research](docs/research/phase-93-failure-semantics.md)
 - [Phase 81 synthetic policy authority research](docs/research/phase-81-synthetic-policy-authority.md)
 - [Phase 82 synthetic identity lifecycle research](docs/research/phase-82-synthetic-identity-lifecycle.md)

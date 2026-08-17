@@ -10,10 +10,10 @@ This record is the current T1 authority state. Descriptive plans and completed t
 
 | Required field | Value |
 |---|---|
-| Service owner | Daniel Rosado Castro; role/contact/expiry pending |
-| Lifecycle/key owner | Daniel Rosado Castro; role/contact/expiry pending |
-| Audit/replay owner | Daniel Rosado Castro; role/contact/expiry pending |
-| Recovery/rollback owner | Daniel Rosado Castro; role/contact/expiry pending |
+| Service owner | Daniel Rosado Castro; Project Owner / Independent Researcher; repository governance escalation; expires 2026-09-15 |
+| Lifecycle/key owner | Daniel Rosado Castro; Project Owner / Independent Researcher; repository governance escalation; expires 2026-09-15 |
+| Audit/replay owner | Daniel Rosado Castro; Project Owner / Independent Researcher; repository governance escalation; expires 2026-09-15 |
+| Recovery/rollback owner | Daniel Rosado Castro; Project Owner / Independent Researcher; repository governance escalation; expires 2026-09-15 |
 | Candidate builder | Daniel Rosado Castro |
 | AI build assistants | GPT-5.6, Sol, Luna, Terra; no authority or risk acceptance |
 | Artifact reviewer | Daniel Rosado Castro |
@@ -30,15 +30,15 @@ This record is the current T1 authority state. Descriptive plans and completed t
 | Research exception effective date | `2026-08-16` |
 | Research exception expiry | `2026-09-15` |
 | G2/G3 applicability | `NONE` |
-| Source commit | `UNASSIGNED` |
-| Build/toolchain record | `UNASSIGNED` |
-| Dependency lock/SBOM digest | `UNASSIGNED` |
-| Candidate package digest | `UNASSIGNED` |
-| Focused test evidence digest | `UNASSIGNED` |
-| G1 approval expiry | `UNASSIGNED` |
-| G1 build authorization | `AUTHORIZED_TO_BUILD` uninstalled non-production candidate only |
-| G1 artifact acceptance | `PENDING_EVIDENCE` |
-| G1 decision | `IN_PROGRESS`; no installation authority |
+| Source commit | `d5fc17b82ceb125a14d8552d54b9d604d59ebde3` |
+| Build/toolchain record | `docs/evidence/t1-g1-candidate-provenance.md`; SHA-256 `CD3092CB08237AA1FF459CE46DFD9A90378416E67D31EAC8B6967FA9D7E546F8` |
+| Dependency lock/SBOM digest | `76EA6EE3BD137F081B3405384DA00A885F7394A65C3D8381CCE9BB419E60BDD7` |
+| Candidate package digest | `CC4B6AF816F5DDFE1909F05DF4B1AA2649D4095F147028F17B2B10E7138BC126` |
+| Focused test evidence | 11 focused tests passed; 207 complete tests passed |
+| G1 approval expiry | `2026-09-15` |
+| G1 build authorization | `COMPLETED` for uninstalled non-production protocol/core candidate |
+| G1 artifact acceptance | `BLOCKED_INCOMPLETE` |
+| G1 decision | `BUILD_COMPLETE`; no installation authority |
 
 ## G2 disabled provisioning
 
@@ -93,4 +93,6 @@ Project owner Daniel Rosado Castro approved a bounded exception acknowledging th
 
 The residual risk of self-review is explicitly accepted for that bounded experiment. AI build assistants may provide analysis but do not supply human independence. The exception terminates immediately on candidate digest change, scope expansion, environment change, authority change, T1 audit, or its exact expiry date, whichever occurs first.
 
-The project owner assigned expiry `2026-09-15`. The exception is active only from `2026-08-16` through that date and has no G2 or G3 applicability. It authorizes building and testing one uninstalled non-production candidate; artifact acceptance remains pending exact digest, provenance, SBOM, and test evidence.
+The project owner assigned expiry `2026-09-15`. The exception is active only from `2026-08-16` through that date and has no G2 or G3 applicability. It authorized building and testing one uninstalled non-production candidate. That build is complete and evidence-bound, but artifact acceptance is blocked because the candidate lacks required service, IPC, replay, lifecycle, audit, and activation controls.
+
+If Daniel Rosado Castro becomes unavailable, all owner and exception authority expires immediately and work stops; no software or AI assistant may replace the owner.

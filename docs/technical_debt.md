@@ -42,7 +42,7 @@ Each phase record must answer:
 ### TD-T1 - Protected signing pilot lacks configured enforcement boundary
 
 - **Transition:** T1
-- **Status:** G1 candidate build authorized under bounded exception expiring 2026-09-15; artifact acceptance pending evidence; G2/G3 blocked
+- **Status:** G1 protocol/core candidate built and evidence-bound; artifact acceptance blocked incomplete; G2/G3 blocked
 - **Severity:** High
 - **What changed:** Selected a bounded Windows protected-signing pilot and defined its signer, IPC, lifecycle, refusal, recovery, rollback, and assurance contracts.
 - **What broke or was discovered:** TPM readiness is unavailable or not exposed on this host, so hardware-backed custody cannot be claimed for the initial pilot.
@@ -53,8 +53,8 @@ Each phase record must answer:
 - **Research-governance risk:** G1 self-review cannot detect all builder bias or artifact-review errors. No independence or separation-of-duty claim is permitted; G2/G3 cannot inherit this exception.
 - **Refactor required:** Yes before implementation and again before hardware-backed or production claims.
 - **Related controls:** `docs/transitions/t1-protected-signing-plan.md`, `docs/transitions/t1-deployment-specification.md`, `docs/transitions/t1-operations-runbook.md`, `docs/transitions/t1-implementation-gate.md`, `docs/transitions/t1-gate-record.md`, AUD100-004, TD-104, INV-TRAJ-001, INV-FAIL-001 through INV-FAIL-003.
-- **Tests added:** None; T1 remains planning-only.
-- **Tests still missing:** All protected key, caller-token, named-pipe, lifecycle, replay, rotation, restart, failure, rollback, and substitute-key adversarial tests.
+- **Tests added:** Eleven pytest-discoverable candidate tests for strict envelope binding/refusal, lifetime, blocked activation, no key creation, and no network listener; full suite is 207 tests.
+- **Tests still missing:** Protected key, caller-token, named-pipe ACL, lifecycle/replay persistence, audit-before-success, rotation, restart, failure, rollback, and substitute-key adversarial tests.
 - **Owner:** Nova Aegis
 - **Review date:** Before T1 implementation and mandatory pre-T2 audit.
 
